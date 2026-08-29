@@ -21,7 +21,7 @@ logger = logging.getLogger("krishicare")
 
 import ml_inference
 from models import init_db
-from routes import diagnose, farms, expert, alerts
+from routes import diagnose, farms, expert, alerts, advisory, weather
 
 app = FastAPI(
     title="KrishiCare API",
@@ -42,6 +42,8 @@ app.include_router(diagnose.router)
 app.include_router(farms.router)
 app.include_router(expert.router)
 app.include_router(alerts.router)
+app.include_router(advisory.router)  # P2
+app.include_router(weather.router)   # P2
 
 
 @app.on_event("startup")
