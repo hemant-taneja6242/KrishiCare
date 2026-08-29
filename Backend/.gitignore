@@ -1,0 +1,13 @@
+# Environments
+Backend/myenv/
+Backend/.env
+
+# Python Cache
+Backend/__pycache__/
+Backend/routes/__pycache__/
+
+# Database
+Backend/krishicare.db
+
+# IDE settings
+Backend/.vscode/
