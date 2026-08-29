@@ -1,0 +1,44 @@
+[
+  {
+    "id": "farmer_001",
+    "name": "Ramesh Kumar",
+    "phone": "+91-98765-43210",
+    "village": "Karnal",
+    "state": "Haryana",
+    "country": "India",
+    "latitude": 29.6857,
+    "longitude": 76.9905,
+    "primaryCrops": ["Rice (Basmati)", "Wheat"],
+    "farmSizeAcres": 12.5,
+    "joinedDate": "2026-01-15T08:30:00Z",
+    "status": "Verified Active"
+  },
+  {
+    "id": "farmer_002",
+    "name": "Sunita Devi",
+    "phone": "+91-98123-56789",
+    "village": "Nashik",
+    "state": "Maharashtra",
+    "country": "India",
+    "latitude": 19.9975,
+    "longitude": 73.7898,
+    "primaryCrops": ["Tomato", "Cotton", "Grapes"],
+    "farmSizeAcres": 5.0,
+    "joinedDate": "2026-02-01T10:15:00Z",
+    "status": "Verified Active"
+  },
+  {
+    "id": "farmer_003",
+    "name": "Vijay Patel",
+    "phone": "+91-97234-89012",
+    "village": "Rajkot",
+    "state": "Gujarat",
+    "country": "India",
+    "latitude": 22.3039,
+    "longitude": 70.8022,
+    "primaryCrops": ["Groundnut", "Mustard", "Tomato"],
+    "farmSizeAcres": 8.2,
+    "joinedDate": "2026-02-20T14:45:00Z",
+    "status": "Verified Active"
+  }
+]

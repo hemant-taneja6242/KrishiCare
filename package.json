@@ -1,0 +1,25 @@
+{
+  "name": "krishi-care",
+  "version": "1.0.0",
+  "description": "KrishiCare — Smart AI-powered Crop Health & Disease Diagnostics Platform for Farmers",
+  "main": "src/db/seed.js",
+  "scripts": {
+    "start": "node src/db/seed.js",
+    "seed": "node src/db/seed.js",
+    "seed:python": "python3 src/db/seed.py",
+    "test:api": "echo 'Run E2E API tests specified in src/docs/api_testing_guide.md'",
+    "serve:preview": "npx serve public -p 3000"
+  },
+  "keywords": [
+    "krishicare",
+    "agriculture",
+    "crop-health",
+    "plant-disease",
+    "plantvillage",
+    "ai-diagnostics",
+    "farmer-app"
+  ],
+  "author": "KrishiCare Sprint Team (P1-P5)",
+  "license": "ISC",
+  "dependencies": {}
+}

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KrishiCare — Project Infrastructure & Design System Preview</title>
+  <link rel="stylesheet" href="../src/css/krishi-theme.css">
+  <style>
+    .header-banner {
+      background: linear-gradient(135deg, var(--color-primary-950) 0%, var(--color-primary-800) 100%);
+      color: #ffffff;
+      padding: var(--space-12) 0;
+      margin-bottom: var(--space-8);
+      position: relative;
+      overflow: hidden;
+    }
+    .header-banner h1 {
+      color: #ffffff;
+      font-size: var(--text-5xl);
+    }
+    .header-banner p {
+      color: var(--color-primary-200);
+      font-size: var(--text-xl);
+    }
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: var(--space-10);
+      margin-bottom: var(--space-6);
+      border-bottom: 2px solid var(--color-primary-100);
+      padding-bottom: var(--space-2);
+    }
+    .color-swatch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: var(--space-4);
+    }
+    .swatch {
+      padding: var(--space-4);
+      border-radius: var(--radius-md);
+      color: #ffffff;
+      font-weight: var(--weight-bold);
+      font-size: var(--text-xs);
+      box-shadow: var(--shadow-sm);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <header class="header-banner">
+    <div class="container">
+      <div class="flex items-center gap-4">
+        <span style="font-size: 3rem;">🌾</span>
+        <div>
+          <h1>KrishiCare (कृषि केयर)</h1>
+          <p>Smart AI-Powered Crop Health Diagnostics & Regional Alert System</p>
+          <div class="flex gap-2" style="margin-top: var(--space-3);">
+            <span class="badge badge-success">Sprint Day 1 Ready</span>
+            <span class="badge badge-medium">Role: P5 — Integration + Demo</span>
+            <span class="badge badge-low">Font: Outfit</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-bottom: var(--space-16);">
+
+    <!-- Section 1: PlantVillage Dataset Sample Leaves -->
+    <div class="section-title">
+      <h2>🍃 PlantVillage Sample Leaf Images (Demo Dataset)</h2>
+      <span class="badge badge-low">6 Sample Leaf Classes</span>
+    </div>
+
+    <div class="grid grid-3">
+      <!-- Leaf 1 -->
+      <div class="leaf-card">
+        <div class="leaf-img-wrapper">
+          <img src="images/sample_leaves/rice_blast.jpg" alt="Rice Blast">
+        </div>
+        <div class="leaf-card-content">
+          <div class="flex justify-between items-center" style="margin-bottom: var(--space-2);">
+            <h3 class="leaf-card-title">Rice Blast</h3>
+            <span class="badge badge-critical">Critical</span>
+          </div>
+          <p style="font-size: var(--text-xs); margin-bottom: var(--space-2);">Pathogen: <em>Magnaporthe oryzae</em></p>
+          <p style="font-size: var(--text-sm);">Spindle-shaped grey-white lesions with dark brown borders.</p>
+        </div>
+      </div>
+
+      <!-- Leaf 2 -->
+      <div class="leaf-card">
+        <div class="leaf-img-wrapper">
+          <img src="images/sample_leaves/tomato_early_blight.jpg" alt="Tomato Early Blight">
+        </div>
+        <div class="leaf-card-content">
+          <div class="flex justify-between items-center" style="margin-bottom: var(--space-2);">
+            <h3 class="leaf-card-title">Tomato Early Blight</h3>
+            <span class="badge badge-high">High</span>
+          </div>
+          <p style="font-size: var(--text-xs); margin-bottom: var(--space-2);">Pathogen: <em>Alternaria solani</em></p>
+          <p style="font-size: var(--text-sm);">Concentric target-like rings with surrounding yellow halo.</p>
+        </div>
+      </div>
+
+      <!-- Leaf 3 -->
+      <div class="leaf-card">
+        <div class="leaf-img-wrapper">
+          <img src="images/sample_leaves/tomato_late_blight.jpg" alt="Tomato Late Blight">
+        </div>
+        <div class="leaf-card-content">
+          <div class="flex justify-between items-center" style="margin-bottom: var(--space-2);">
+            <h3 class="leaf-card-title">Tomato Late Blight</h3>
+            <span class="badge badge-critical">Critical</span>
+          </div>
+          <p style="font-size: var(--text-xs); margin-bottom: var(--space-2);">Pathogen: <em>Phytophthora infestans</em></p>
+          <p style="font-size: var(--text-sm);">Dark water-soaked expanding lesions in humid conditions.</p>
+        </div>
+      </div>
+
+      <!-- Leaf 4 -->
+      <div class="leaf-card">
+        <div class="leaf-img-wrapper">
+          <img src="images/sample_leaves/powdery_mildew.jpg" alt="Powdery Mildew">
+        </div>
+        <div class="leaf-card-content">
+          <div class="flex justify-between items-center" style="margin-bottom: var(--space-2);">
+            <h3 class="leaf-card-title">Powdery Mildew</h3>
+            <span class="badge badge-medium">Medium</span>
+          </div>
+          <p style="font-size: var(--text-xs); margin-bottom: var(--space-2);">Pathogen: <em>Erysiphe polygoni</em></p>
+          <p style="font-size: var(--text-sm);">White powdery fungal patches on upper leaf surfaces.</p>
+        </div>
+      </div>
+
+      <!-- Leaf 5 -->
+      <div class="leaf-card">
+        <div class="leaf-img-wrapper">
+          <img src="images/sample_leaves/healthy_rice.jpg" alt="Healthy Rice">
+        </div>
+        <div class="leaf-card-content">
+          <div class="flex justify-between items-center" style="margin-bottom: var(--space-2);">
+            <h3 class="leaf-card-title">Healthy Rice</h3>
+            <span class="badge badge-success">Healthy</span>
+          </div>
+          <p style="font-size: var(--text-xs); margin-bottom: var(--space-2);">Condition: Normal Leaf</p>
+          <p style="font-size: var(--text-sm);">Vibrant green leaf blades without spots or fungal discoloration.</p>
+        </div>
+      </div>
+
+      <!-- Leaf 6 -->
+      <div class="leaf-card">
+        <div class="leaf-img-wrapper">
+          <img src="images/sample_leaves/healthy_tomato.jpg" alt="Healthy Tomato">
+        </div>
+        <div class="leaf-card-content">
+          <div class="flex justify-between items-center" style="margin-bottom: var(--space-2);">
+            <h3 class="leaf-card-title">Healthy Tomato</h3>
+            <span class="badge badge-success">Healthy</span>
+          </div>
+          <p style="font-size: var(--text-xs); margin-bottom: var(--space-2);">Condition: Normal Foliage</p>
+          <p style="font-size: var(--text-sm);">Deep green compound leaves with crisp edges and firm veins.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Seed Data Summary -->
+    <div class="section-title">
+      <h2>📊 Database Seed Records</h2>
+      <span class="badge badge-success">Seed Script Tested</span>
+    </div>
+
+    <div class="grid grid-3">
+      <div class="card card-glass">
+        <h3>👨‍🌾 3 Farmer Profiles</h3>
+        <p style="font-size: var(--text-sm);">Pre-populated with location coordinates, phone contacts, and crops:</p>
+        <ul style="padding-left: var(--space-4); font-size: var(--text-sm); color: var(--color-slate-700);">
+          <li><strong>Ramesh Kumar</strong> (Karnal, HR) — Rice & Wheat</li>
+          <li><strong>Sunita Devi</strong> (Nashik, MH) — Tomato & Cotton</li>
+          <li><strong>Vijay Patel</strong> (Rajkot, GJ) — Groundnut & Tomato</li>
+        </ul>
+      </div>
+
+      <div class="card card-glass">
+        <h3>🔬 10 Past Diagnoses</h3>
+        <p style="font-size: var(--text-sm);">Historical AI diagnoses with confidence scores & treatment plans:</p>
+        <ul style="padding-left: var(--space-4); font-size: var(--text-sm); color: var(--color-slate-700);">
+          <li>Rice Blast (96.4% confidence)</li>
+          <li>Tomato Late Blight (98.2% confidence)</li>
+          <li>Powdery Mildew (93.1% confidence)</li>
+        </ul>
+      </div>
+
+      <div class="card card-glass">
+        <h3>🚨 8 Regional Alert Hotspots</h3>
+        <p style="font-size: var(--text-sm);">Geospatial disease alerts for map visualization:</p>
+        <ul style="padding-left: var(--space-4); font-size: var(--text-sm); color: var(--color-slate-700);">
+          <li>Karnal Rice Belt (Radius: 35 km)</li>
+          <li>Nashik Horticultural Zone (Radius: 25 km)</li>
+          <li>Rajkot Groundnut Cluster (Radius: 18 km)</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Section 3: Design Tokens & Components -->
+    <div class="section-title">
+      <h2>🎨 Shared Design Tokens & Typography (`Outfit`)</h2>
+      <span class="badge badge-low">Google Font Outfit</span>
+    </div>
+
+    <div class="card" style="margin-bottom: var(--space-6);">
+      <h3 style="margin-bottom: var(--space-3);">Color Swatches</h3>
+      <div class="color-swatch-grid">
+        <div class="swatch" style="background-color: var(--color-primary-950);">Primary 950<br>#022c22</div>
+        <div class="swatch" style="background-color: var(--color-primary-800);">Primary 800<br>#114e29</div>
+        <div class="swatch" style="background-color: var(--color-primary-600);">Primary 600<br>#15803d</div>
+        <div class="swatch" style="background-color: var(--color-primary-500);">Primary 500<br>#16a34a</div>
+        <div class="swatch" style="background-color: var(--color-amber-600);">Amber 600<br>#d97706</div>
+        <div class="swatch" style="background-color: var(--color-severity-critical);">Critical<br>#ef4444</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom: var(--space-3);">UI Component Showcase</h3>
+      <div class="flex gap-4 items-center" style="margin-bottom: var(--space-4);">
+        <button class="btn btn-primary">Diagnose Crop Health</button>
+        <button class="btn btn-secondary">View Alert Map</button>
+        <button class="btn btn-outline">Download Seed Data</button>
+      </div>
+
+      <div class="upload-dropzone">
+        <span style="font-size: 2rem;">📸</span>
+        <h4 style="margin-top: var(--space-2);">Drag & drop leaf photo here</h4>
+        <p style="font-size: var(--text-xs); margin-bottom: 0;">Supports JPG, PNG (Max 10MB)</p>
+      </div>
+    </div>
+
+  </main>
+
+  <footer style="text-align: center; padding: var(--space-6); background-color: var(--color-slate-900); color: var(--color-slate-400); font-size: var(--text-sm);">
+    KrishiCare Day 1 Infrastructure Deliverables | Maintained by P5 (Integration + Demo)
+  </footer>
+
+</body>
+</html>
