@@ -47,11 +47,13 @@ export default function FarmerRisk() {
   const humidity = weather?.weather?.humidity_pct ?? '--';
   const rain = weather?.weather?.rain_probability_pct ?? '--';
 
+  const condition = weather?.weather?.condition || 'Partly Cloudy';
+
   const weatherMetrics = [
     { icon: '🌡️', label: 'Temperature', value: `${temp}°C` },
     { icon: '💧', label: 'Humidity',    value: `${humidity}%` },
     { icon: '🌧️', label: 'Rain Chance', value: `${rain}%` },
-    { icon: '🌤️', label: 'Conditions',  value: 'Partly Cloudy' },
+    { icon: '🌤️', label: 'Conditions',  value: condition },
   ];
 
   const fmtTime = (str) => {
@@ -90,7 +92,7 @@ export default function FarmerRisk() {
                 </div>
                 <div className="text-right">
                   <div className="text-5xl">🌤️</div>
-                  <p className="text-green-200 text-sm mt-1">Scattered Clouds</p>
+                  <p className="text-green-200 text-sm mt-1">{condition}</p>
                 </div>
               </div>
             </div>

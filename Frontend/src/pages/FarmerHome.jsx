@@ -110,7 +110,10 @@ export default function FarmerHome() {
               <div className="flex-1">
                 <div className="flex items-center gap-3">
                   <span className="text-3xl font-black text-gray-900">{temp}°C</span>
-                  <span className="text-gray-500 text-sm">{t('home.humidity')} {humidity}%</span>
+                  <span className="text-gray-500 text-sm font-medium">
+                    {weather?.weather?.condition ? `${weather.weather.condition} · ` : ''}
+                    {t('home.humidity')} {humidity}%
+                  </span>
                 </div>
                 <span
                   className="pill mt-2 text-xs font-bold"

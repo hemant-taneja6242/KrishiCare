@@ -153,10 +153,12 @@ def _compute_risk(weather_data: dict, crop: Optional[str]) -> tuple[str, list[st
     else:
         level = "Low"
 
+    weather_desc = current.get("weather", [{}])[0].get("description", "Partly Cloudy").title()
     breakdown = {
         "temperature_c": temp,
         "humidity_pct": humidity,
         "rain_probability_pct": round(avg_rain_prob * 100, 1),
+        "condition": weather_desc,
     }
     return level, reasons, breakdown
 

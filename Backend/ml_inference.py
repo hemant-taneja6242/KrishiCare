@@ -9,7 +9,11 @@ Models:
 """
 import io
 import logging
+import os
 from typing import Optional
+
+os.environ["HF_HUB_OFFLINE"] = "1"
+os.environ["TRANSFORMERS_OFFLINE"] = "1"
 
 from PIL import Image
 
