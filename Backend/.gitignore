@@ -1,13 +1,18 @@
 # Environments
-Backend/myenv/
-Backend/.env
+myenv/
+venv/
+.env
 
 # Python Cache
-Backend/__pycache__/
-Backend/routes/__pycache__/
+__pycache__/
+*.py[cod]
+*$py.class
 
 # Database
-Backend/krishicare.db
+krishicare.db
+
+# Uploads
+uploads/
 
 # IDE settings
-Backend/.vscode/
+.vscode/
