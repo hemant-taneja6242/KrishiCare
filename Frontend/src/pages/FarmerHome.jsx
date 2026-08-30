@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { getWeatherRisk, listFarms, getNearbyAlerts } from '../api/client';
 import BottomTabBar from '../components/BottomTabBar';
@@ -11,14 +12,8 @@ const RISK_COLORS = {
   Low:      { bg: '#f0fdf4', badge: '#16a34a', text: '#166534' },
 };
 
-const timeOfDay = () => {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good Morning';
-  if (h < 17) return 'Good Afternoon';
-  return 'Good Evening';
-};
-
 export default function FarmerHome() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [weather, setWeather] = useState(null);
@@ -29,6 +24,13 @@ export default function FarmerHome() {
 
   const lat = user?.latitude || 19.99;
   const lon = user?.longitude || 73.78;
+
+  const timeOfDayGreeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return t('home.greetingMorning');
+    if (h < 17) return t('home.greetingAfternoon');
+    return t('home.greetingEvening');
+  };
 
   useEffect(() => {
     getWeatherRisk(lat, lon, user?.primaryCrop)
@@ -41,10 +43,15 @@ export default function FarmerHome() {
       .catch(() => setFarms([]))
       .finally(() => setLoadingFarms(false));
 
-    getNearbyAlerts(lat, lon, 5)
-      .then((r) => setAlerts(r.data?.farms?.slice(0, 3) || []))
+    const savedRad = localStorage.getItem('krishi_alert_radius');
+    const rad = savedRad ? parseFloat(savedRad) : 5.0;
+    getNearbyAlerts(lat, lon, rad)
+      .then((r) => {
+        const data = Array.isArray(r.data) ? r.data : (r.data?.farms || []);
+        setAlerts(data.slice(0, 3));
+      })
       .catch(() => setAlerts([]));
-  }, []);
+  }, [lat, lon]);
 
   const risk = weather?.risk_level || 'Low';
   const riskColors = RISK_COLORS[risk] || RISK_COLORS.Low;
@@ -52,10 +59,10 @@ export default function FarmerHome() {
   const humidity = weather?.weather?.humidity_pct ?? '--';
 
   const actions = [
-    { icon: '📸', label: 'Scan Crop', path: '/farmer/scan', color: '#1F5F3F' },
-    { icon: '🌾', label: 'My Farms', path: '/farmer/farms', color: '#2D6A4F' },
-    { icon: '🔔', label: 'Alerts', path: '/farmer/alerts', color: '#ea580c' },
-    { icon: '📋', label: 'History', path: '/farmer/history', color: '#7c3aed' },
+    { icon: '📸', labelKey: 'nav.scanCrop', path: '/farmer/scan', color: '#1F5F3F' },
+    { icon: '🌾', labelKey: 'nav.myFarms', path: '/farmer/farms', color: '#2D6A4F' },
+    { icon: '🔔', labelKey: 'nav.alerts', path: '/farmer/alerts', color: '#ea580c' },
+    { icon: '📋', labelKey: 'nav.history', path: '/farmer/history', color: '#7c3aed' },
   ];
 
   const cropColors = ['#dcfce7', '#dbeafe', '#fef3c7', '#fce7f3', '#ede9fe'];
@@ -66,19 +73,23 @@ export default function FarmerHome() {
       <div style={{ background: 'linear-gradient(135deg, #1F5F3F 0%, #2D6A4F 100%)', padding: '52px 20px 24px', borderRadius: '0 0 28px 28px' }}>
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-green-300 text-sm font-medium mb-1">{timeOfDay()}</p>
+            <p className="text-green-300 text-sm font-medium mb-1">{timeOfDayGreeting()}</p>
             <h1 className="text-white text-2xl font-black">{user?.name} {user?.avatar}</h1>
             <div className="flex items-center gap-1 mt-1">
               <span className="text-green-300 text-sm">📍</span>
-              <span className="text-green-200 text-sm">{user?.location}</span>
+              <span className="text-green-200 text-sm">{user?.location || t('home.location')}</span>
             </div>
           </div>
           <button
-            onClick={logout}
-            className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white text-lg hover:bg-white/30 transition-colors"
-            title="Logout"
+            onClick={() => navigate('/farmer/alerts')}
+            className="relative w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white text-lg hover:bg-white/30 transition-colors"
+            title={t('nav.alerts')}
+            aria-label={t('nav.alerts')}
           >
             🔔
+            {alerts.length > 0 && (
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-orange-400 border-2 border-green-800 rounded-full" />
+            )}
           </button>
         </div>
 
@@ -99,7 +110,7 @@ export default function FarmerHome() {
               <div className="flex-1">
                 <div className="flex items-center gap-3">
                   <span className="text-3xl font-black text-gray-900">{temp}°C</span>
-                  <span className="text-gray-500 text-sm">Humidity {humidity}%</span>
+                  <span className="text-gray-500 text-sm">{t('home.humidity')} {humidity}%</span>
                 </div>
                 <span
                   className="pill mt-2 text-xs font-bold"
@@ -127,7 +138,7 @@ export default function FarmerHome() {
         <div className="grid grid-cols-4 gap-3 mb-6">
           {actions.map((a) => (
             <button
-              key={a.label}
+              key={a.labelKey}
               onClick={() => navigate(a.path)}
               className="flex flex-col items-center gap-2 group"
             >
@@ -137,7 +148,7 @@ export default function FarmerHome() {
               >
                 {a.icon}
               </div>
-              <span className="text-xs font-semibold text-gray-600">{a.label}</span>
+              <span className="text-xs font-semibold text-gray-600">{t(a.labelKey)}</span>
             </button>
           ))}
         </div>
@@ -151,7 +162,7 @@ export default function FarmerHome() {
           >
             <div className="text-2xl">⚠️</div>
             <div className="flex-1">
-              <p className="font-bold text-orange-800 text-sm">{alerts.length} nearby farm{alerts.length > 1 ? 's' : ''} affected</p>
+              <p className="font-bold text-orange-800 text-sm">{t('home.affectedFarms', { count: alerts.length })}</p>
               <p className="text-orange-600 text-xs mt-0.5">{alerts[0]?.message?.slice(0, 60)}...</p>
             </div>
             <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#ea580c" strokeWidth={2}>
@@ -162,8 +173,8 @@ export default function FarmerHome() {
 
         {/* My Farms */}
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-black text-gray-900">My Farms</h2>
-          <button onClick={() => navigate('/farmer/farms')} className="text-green-700 text-sm font-semibold hover:text-green-900">See all →</button>
+          <h2 className="text-lg font-black text-gray-900">{t('home.myFarmsTitle')}</h2>
+          <button onClick={() => navigate('/farmer/farms')} className="text-green-700 text-sm font-semibold hover:text-green-900">{t('home.seeAll')}</button>
         </div>
 
         {loadingFarms ? (
@@ -181,8 +192,8 @@ export default function FarmerHome() {
         ) : farms.length === 0 ? (
           <div className="card text-center py-10">
             <div className="text-4xl mb-3">🌾</div>
-            <p className="text-gray-500 font-medium">No farms yet</p>
-            <p className="text-gray-400 text-sm mt-1">Add your first farm to get started</p>
+            <p className="text-gray-500 font-medium">{t('farms.noFarms')}</p>
+            <p className="text-gray-400 text-sm mt-1">{t('farms.addFarmBtn')}</p>
           </div>
         ) : (
           <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
@@ -190,53 +201,25 @@ export default function FarmerHome() {
               <div
                 key={farm.id}
                 className="flex-shrink-0 w-44 rounded-2xl overflow-hidden shadow-md cursor-pointer hover:shadow-xl transition-shadow"
-                onClick={() => navigate(`/farmer/farms/${farm.id}`)}
+                onClick={() => navigate('/farmer/farms')}
               >
                 <div
-                  className="h-24 flex items-center justify-center text-4xl"
+                  className="h-28 flex items-center justify-center text-4xl"
                   style={{ background: cropColors[i % cropColors.length] }}
                 >
                   🌾
                 </div>
                 <div className="p-3 bg-white">
-                  <p className="font-bold text-gray-900 text-sm truncate">{farm.farmer_name}'s Farm</p>
-                  {farm.primary_crop && (
-                    <span className="pill text-xs mt-1" style={{ background: '#dcfce7', color: '#166534' }}>
-                      {farm.primary_crop}
-                    </span>
-                  )}
-                  <p className="text-gray-400 text-xs mt-1 truncate">📍 {farm.district || farm.village || 'Farm'}</p>
+                  <p className="font-bold text-gray-900 text-sm truncate">{farm.name}</p>
+                  <span className="pill text-xs mt-1" style={{ background: '#dcfce7', color: '#15803d' }}>
+                    {farm.crop_type || t('home.primaryCrop')}
+                  </span>
+                  <p className="text-gray-400 text-xs mt-1">{farm.area_acres || 2} acres · {farm.district}</p>
                 </div>
               </div>
             ))}
-            {/* Add farm card */}
-            <div
-              className="flex-shrink-0 w-44 rounded-2xl border-2 border-dashed border-green-200 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-green-400 hover:bg-green-50 transition-all"
-              style={{ minHeight: 148 }}
-              onClick={() => navigate('/farmer/farms')}
-            >
-              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 text-xl">+</div>
-              <span className="text-green-700 text-xs font-semibold">Add Farm</span>
-            </div>
           </div>
         )}
-
-        {/* Recent Activity */}
-        <div className="mt-6">
-          <h2 className="text-lg font-black text-gray-900 mb-3">Recent Scans</h2>
-          <div className="card flex flex-col items-center justify-center py-8 text-center">
-            <div className="text-4xl mb-3">📸</div>
-            <p className="font-semibold text-gray-700">No scans yet</p>
-            <p className="text-gray-400 text-sm mt-1 mb-4">Scan a crop leaf to detect diseases</p>
-            <button
-              onClick={() => navigate('/farmer/scan')}
-              className="btn-primary"
-              style={{ width: 'auto', padding: '12px 32px' }}
-            >
-              Scan Now
-            </button>
-          </div>
-        </div>
       </div>
 
       <BottomTabBar />

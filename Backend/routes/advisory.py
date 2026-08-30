@@ -33,7 +33,7 @@ logger = logging.getLogger("krishicare.advisory")
 router = APIRouter(prefix="/api", tags=["advisory"])
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL_NAME = "gemini-1.5-flash"
+GEMINI_MODEL_NAME = "gemini-3.6-flash"
 
 # How long a cached advisory is considered fresh before we try Gemini again.
 # Advisory content for a given disease doesn't really go stale, so this is

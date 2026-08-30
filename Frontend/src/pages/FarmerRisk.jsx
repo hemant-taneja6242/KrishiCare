@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { getWeatherRisk, getNearbyAlerts } from '../api/client';
 import BottomTabBar from '../components/BottomTabBar';
@@ -12,6 +13,7 @@ const RISK_CONFIG = {
 };
 
 export default function FarmerRisk() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [weather, setWeather] = useState(null);
@@ -28,8 +30,13 @@ export default function FarmerRisk() {
       .catch(() => setWeather(null))
       .finally(() => setLoading(false));
 
-    getNearbyAlerts(lat, lon, 5)
-      .then((r) => setAlerts(r.data?.farms || []))
+    const savedRad = localStorage.getItem('krishi_alert_radius');
+    const rad = savedRad ? parseFloat(savedRad) : 5.0;
+    getNearbyAlerts(lat, lon, rad)
+      .then((r) => {
+        const data = Array.isArray(r.data) ? r.data : (r.data?.farms || []);
+        setAlerts(data);
+      })
       .catch(() => setAlerts([]))
       .finally(() => setLoadingAlerts(false));
   }, []);
@@ -59,8 +66,8 @@ export default function FarmerRisk() {
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-14 pb-4">
         <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">←</button>
-        <h1 className="text-lg font-black text-gray-900">Weather & Risk</h1>
-        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">🔔</div>
+        <h1 className="text-lg font-black text-gray-900">{t('home.diseaseRisk')}</h1>
+        <button onClick={() => navigate('/farmer/alerts')} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors" title={t('nav.alerts')}>🔔</button>
       </div>
 
       <div className="px-5">

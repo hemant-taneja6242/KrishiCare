@@ -1,19 +1,36 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 
-const navItems = [
-  { icon: '📊', label: 'Dashboard',   path: '/admin' },
-  { icon: '🗺️', label: 'Hotspot Map', path: '/admin/map' },
-  { icon: '👩‍🔬', label: 'Expert Queue', path: '/admin/expert' },
-  { icon: '🔔', label: 'Alerts',       path: '/admin/alerts' },
-  { icon: '⚙️', label: 'Settings',     path: '/admin/settings' },
+const ADMIN_NAV_ITEMS = [
+  { icon: '📊', key: 'dashboard',   labelKey: 'nav.dashboard',    path: '/admin' },
+  { icon: '🗺️', key: 'hotspotMap',  labelKey: 'nav.hotspotMap',   path: '/admin/map' },
+  { icon: '👩‍🔬', key: 'expertQueue', labelKey: 'nav.expertQueue',  path: '/admin/expert' },
+  { icon: '🔔', key: 'alerts',       labelKey: 'nav.alerts',       path: '/admin/alerts' },
+  { icon: '⚙️', key: 'settings',     labelKey: 'nav.settings',     path: '/admin/settings' },
+];
+
+const EXPERT_NAV_ITEMS = [
+  { icon: '👩‍🔬', key: 'expertQueue', labelKey: 'nav.expertQueue',  path: '/expert' },
+  { icon: '🔔', key: 'alerts',       labelKey: 'nav.alerts',       path: '/expert/alerts' },
+  { icon: '⚙️', key: 'settings',     labelKey: 'nav.settings',     path: '/expert/settings' },
 ];
 
 export default function AdminSidebar() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+
+  const isExpert = user?.role === 'expert';
+  const navItems = isExpert ? EXPERT_NAV_ITEMS : ADMIN_NAV_ITEMS;
+
+  const isItemActive = (itemPath) => {
+    if (pathname === itemPath) return true;
+    if (itemPath === '/expert' && pathname === '/expert/queue') return true;
+    return false;
+  };
 
   return (
     <aside className="admin-sidebar">
@@ -23,7 +40,7 @@ export default function AdminSidebar() {
           <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl">🌿</div>
           <div>
             <p className="text-white font-black text-base leading-tight">KrishiRaksha</p>
-            <p className="text-green-300 text-xs">Admin Portal</p>
+            <p className="text-green-300 text-xs">{isExpert ? t('nav.expertPortal') : t('nav.adminPortal')}</p>
           </div>
         </div>
       </div>
@@ -31,7 +48,7 @@ export default function AdminSidebar() {
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
         {navItems.map((item) => {
-          const active = pathname === item.path;
+          const active = isItemActive(item.path);
           return (
             <button
               key={item.path}
@@ -44,7 +61,7 @@ export default function AdminSidebar() {
               }
             >
               <span className="text-lg">{item.icon}</span>
-              <span className="font-semibold text-sm">{item.label}</span>
+              <span className="font-semibold text-sm">{t(item.labelKey)}</span>
               {active && (
                 <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white" />
               )}
@@ -68,7 +85,7 @@ export default function AdminSidebar() {
           onClick={logout}
           className="w-full text-left text-green-300 hover:text-white text-xs py-2 px-3 rounded-lg hover:bg-white/10 transition-colors font-medium"
         >
-          ← Logout
+          ← {t('common.logout')}
         </button>
       </div>
     </aside>

@@ -55,11 +55,13 @@ class DiagnosisOut(BaseModel):
     confidence: float
     severity: str
     expert_status: str
+    expert_note: Optional[str] = None
+    image_path: Optional[str] = None
     advisory_text: Optional[str]
     advisory_lang: str
     latitude: Optional[float]
     longitude: Optional[float]
-    created_at: datetime
+    created_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -74,6 +76,10 @@ class ExpertValidateRequest(BaseModel):
     note: Optional[str] = None
 
 
+class ThresholdUpdateRequest(BaseModel):
+    threshold: float = Field(..., ge=0.50, le=0.95)
+
+
 # ---------- Alerts ----------
 
 class AlertTriggerRequest(BaseModel):
@@ -83,12 +89,17 @@ class AlertTriggerRequest(BaseModel):
 
 class AlertOut(BaseModel):
     id: int
-    diagnosis_id: Optional[int]
-    source_farm_id: Optional[int]
-    target_farm_id: Optional[int]
+    diagnosis_id: Optional[int] = None
+    source_farm_id: Optional[int] = None
+    target_farm_id: Optional[int] = None
     message: str
-    radius_km: float
+    radius_km: float = 5.0
     created_at: datetime
+    disease: Optional[str] = None
+    district: Optional[str] = None
+    severity: Optional[str] = "High"
+    farms_affected: Optional[int] = 1
+    status: Optional[str] = "Active"
 
     class Config:
         from_attributes = True

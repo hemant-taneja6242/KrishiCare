@@ -1,11 +1,12 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const tabs = [
-  { label: 'Home', icon: HomeIcon, path: '/farmer' },
-  { label: 'Farms', icon: FarmIcon, path: '/farmer/farms' },
-  { label: 'Stats', icon: StatsIcon, path: '/farmer/stats' },
-  { label: 'Profile', icon: ProfileIcon, path: '/farmer/profile' },
+  { key: 'home', labelKey: 'nav.home', icon: HomeIcon, path: '/farmer' },
+  { key: 'farms', labelKey: 'nav.farms', icon: FarmIcon, path: '/farmer/farms' },
+  { key: 'stats', labelKey: 'nav.stats', icon: StatsIcon, path: '/farmer/stats' },
+  { key: 'profile', labelKey: 'nav.profile', icon: ProfileIcon, path: '/farmer/profile' },
 ];
 
 function HomeIcon({ active }) {
@@ -40,6 +41,7 @@ function ProfileIcon({ active }) {
 }
 
 export default function BottomTabBar() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { pathname } = useLocation();
 
@@ -49,9 +51,9 @@ export default function BottomTabBar() {
         const active = pathname === tab.path || (tab.path !== '/farmer' && pathname.startsWith(tab.path));
         const Icon = tab.icon;
         return (
-          <button key={tab.label} className={`tab-item ${active ? 'active' : ''}`} onClick={() => navigate(tab.path)}>
+          <button key={tab.key} className={`tab-item ${active ? 'active' : ''}`} onClick={() => navigate(tab.path)}>
             <Icon active={active} />
-            <span style={{ fontSize: 11, fontWeight: active ? 600 : 500 }}>{tab.label}</span>
+            <span style={{ fontSize: 11, fontWeight: active ? 600 : 500 }}>{t(tab.labelKey)}</span>
           </button>
         );
       })}

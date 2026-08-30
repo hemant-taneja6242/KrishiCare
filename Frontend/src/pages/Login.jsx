@@ -1,27 +1,28 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 
 const roles = [
   {
     key: 'farmer',
     icon: '👨‍🌾',
-    title: 'Login as Farmer',
-    desc: 'Scan crops, get AI disease advice & weather alerts',
+    titleKey: 'login.farmerTitle',
+    descKey: 'login.farmerDesc',
     gradient: 'from-green-700 to-green-600',
   },
   {
     key: 'expert',
     icon: '👩‍🔬',
-    title: 'Login as Expert',
-    desc: 'Review AI diagnoses & provide expert validation',
+    titleKey: 'login.expertTitle',
+    descKey: 'login.expertDesc',
     gradient: 'from-teal-700 to-teal-500',
   },
   {
     key: 'admin',
     icon: '🗺️',
-    title: 'Login as Admin',
-    desc: 'Monitor GIS hotspots, manage districts & alerts',
+    titleKey: 'login.adminTitle',
+    descKey: 'login.adminDesc',
     gradient: 'from-slate-700 to-slate-500',
   },
 ];
@@ -29,6 +30,7 @@ const roles = [
 const ROUTES = { farmer: '/farmer', expert: '/expert', admin: '/admin' };
 
 export default function Login() {
+  const { t } = useTranslation();
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -45,8 +47,8 @@ export default function Login() {
       {/* Logo */}
       <div className="text-center mb-10">
         <div className="text-7xl mb-4 drop-shadow-lg">🌿</div>
-        <h1 className="text-4xl font-black text-white tracking-tight">KrishiRaksha</h1>
-        <p className="text-green-300 mt-2 text-base font-medium">AI-Powered Crop Protection</p>
+        <h1 className="text-4xl font-black text-white tracking-tight">{t('login.title')}</h1>
+        <p className="text-green-300 mt-2 text-base font-medium">{t('login.subtitle')}</p>
       </div>
 
       {/* Role cards */}
@@ -64,8 +66,8 @@ export default function Login() {
                 {r.icon}
               </div>
               <div className="flex-1">
-                <div className="font-bold text-gray-900 text-base">{r.title}</div>
-                <div className="text-gray-500 text-sm mt-0.5 leading-snug">{r.desc}</div>
+                <div className="font-bold text-gray-900 text-base">{t(r.titleKey)}</div>
+                <div className="text-gray-500 text-sm mt-0.5 leading-snug">{t(r.descKey)}</div>
               </div>
               <svg className="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -76,7 +78,7 @@ export default function Login() {
       </div>
 
       {/* Footer */}
-      <p className="text-green-400 text-xs mt-10 font-medium">SIH 2026 · PS 26131 · v1.0.0</p>
+      <p className="text-green-400 text-xs mt-10 font-medium">{t('common.version')}</p>
     </div>
   );
 }

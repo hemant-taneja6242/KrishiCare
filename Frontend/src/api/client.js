@@ -48,8 +48,15 @@ export const getNearbyAlerts = (lat, lon, radius = 5.0) =>
 export const triggerAlert = (diagnosisId, radiusKm = 5.0) =>
   api.post('/api/alerts/trigger', { diagnosis_id: diagnosisId, radius_km: radiusKm });
 
-// ── Expert Queue ──────────────────────────────────
-export const getExpertQueue = () => api.get('/api/expert/queue');
+export const resolveAlert = (alertId) =>
+  api.post(`/api/alerts/${alertId}/resolve`);
+
+export const escalateAlert = (alertId) =>
+  api.post(`/api/alerts/${alertId}/escalate`);
+
+// ── Expert Queue & Configuration ──────────────────
+export const getExpertQueue = (status) =>
+  api.get('/api/expert/queue', { params: status ? { status } : {} });
 
 export const validateDiagnosis = (diagnosisId, action, { correctedDisease, note } = {}) =>
   api.post('/api/expert/validate', {
@@ -58,6 +65,15 @@ export const validateDiagnosis = (diagnosisId, action, { correctedDisease, note 
     corrected_disease: correctedDisease || undefined,
     note: note || undefined,
   });
+
+export const getReviewThreshold = () =>
+  api.get('/api/expert/threshold');
+
+export const updateReviewThreshold = (threshold) =>
+  api.post('/api/expert/threshold', { threshold });
+
+export const getActiveExperts = () =>
+  api.get('/api/expert/list');
 
 // ── Hotspots (Admin Map) ──────────────────────────
 export const getHotspots = (limit = 50) =>

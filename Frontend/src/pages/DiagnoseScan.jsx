@@ -1,13 +1,16 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { diagnoseImage, getAdvisory, triggerAlert } from '../api/client';
+import i18n, { SUPPORTED_LANGUAGES } from '../i18n';
 
 const SEVERITY_STYLE = {
   Critical: { bg: '#fef2f2', color: '#991b1b', badge: '#dc2626', emoji: '🔴' },
   High:     { bg: '#fff7ed', color: '#9a3412', badge: '#ea580c', emoji: '🟠' },
   Medium:   { bg: '#fefce8', color: '#92400e', badge: '#ca8a04', emoji: '🟡' },
   Low:      { bg: '#f0fdf4', color: '#166534', badge: '#16a34a', emoji: '🟢' },
+  None:     { bg: '#f0fdf4', color: '#166534', badge: '#16a34a', emoji: '🟢' },
   Unknown:  { bg: '#f9fafb', color: '#374151', badge: '#6b7280', emoji: '⚪' },
 };
 
@@ -19,9 +22,12 @@ const LANGS = [
 ];
 
 export default function DiagnoseScan() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const fileRef = useRef();
+  const cameraInputRef = useRef();
+  const galleryInputRef = useRef();
+  const utteranceRef = useRef(null);
 
   const [preview, setPreview] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -30,7 +36,7 @@ export default function DiagnoseScan() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
 
-  const [lang, setLang] = useState('en');
+  const [lang, setLang] = useState(() => i18n.language || localStorage.getItem('krishi_app_lang') || 'en');
   const [advisory, setAdvisory] = useState(null);
   const [loadingAdvisory, setLoadingAdvisory] = useState(false);
 
@@ -38,8 +44,25 @@ export default function DiagnoseScan() {
   const [alertSent, setAlertSent] = useState(false);
   const [sendingAlert, setSendingAlert] = useState(false);
 
+  // Sync lang state with global i18n language
+  useEffect(() => {
+    if (i18n.language && i18n.language !== lang) {
+      setLang(i18n.language);
+      if (result) {
+        fetchAdvisory(result.disease, result.crop_type, i18n.language);
+      }
+    }
+  }, [i18n.language]);
+
+  // Clean up speech synthesis on component unmount
+  useEffect(() => {
+    return () => {
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
+
   const onFileChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
     setSelectedFile(file);
     setResult(null);
@@ -57,6 +80,7 @@ export default function DiagnoseScan() {
     try {
       const r = await getAdvisory(disease, crop, language);
       setAdvisory(r.data);
+      console.log('[Advisory Loaded]', { disease, crop, language, source: r.data?.source });
     } catch {
       setAdvisory({ advisory_text: 'Advisory unavailable. Please consult your local Krishi Vigyan Kendra.', source: 'fallback' });
     } finally {
@@ -65,6 +89,7 @@ export default function DiagnoseScan() {
   }, []);
 
   const onLangChange = (newLang) => {
+    i18n.changeLanguage(newLang);
     setLang(newLang);
     if (result) fetchAdvisory(result.disease, result.crop_type, newLang);
   };
@@ -90,54 +115,71 @@ export default function DiagnoseScan() {
           }
         }
       );
-      const data = r.data;
-      setResult(data);
-      await fetchAdvisory(data.disease, data.crop_type, lang);
+
+      const d = r.data;
+      setResult(d);
+      // Fetch initial advisory in selected language
+      fetchAdvisory(d.disease, d.crop_type, lang);
     } catch (err) {
-      // Show the exact backend detail if available, otherwise a helpful fallback
-      const detail = err?.response?.data?.detail;
-      const isTimeout = err?.code === 'ECONNABORTED' || err?.message?.includes('timeout');
-      if (isTimeout) {
-        setError('The AI model is taking longer than expected. Please ensure the backend is running and try again.');
-      } else if (detail) {
-        setError(detail);
-      } else if (!err?.response) {
-        setError('Cannot reach backend. Please make sure the server is running on port 8000.');
-      } else {
-        setError('Failed to analyze image. Please try a clearer photo of a single leaf.');
-      }
+      console.error('Diagnosis failed:', err);
+      const detail = err.response?.data?.detail;
+      setError(
+        typeof detail === 'string'
+          ? detail
+          : 'Could not analyze crop photo. Please ensure clear lighting and try again.'
+      );
     } finally {
       setDiagnosing(false);
-      setUploadProgress(100);
     }
   };
 
   const readAloud = () => {
     if (!advisory?.advisory_text) return;
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(advisory.advisory_text);
-    const langMap = { en: 'en-IN', hi: 'hi-IN', mr: 'mr-IN', ta: 'ta-IN' };
-    utter.lang = langMap[lang] || 'en-IN';
-    utter.rate = 0.9;
-    utter.onstart = () => setSpeaking(true);
-    utter.onend = () => setSpeaking(false);
-    utter.onerror = () => setSpeaking(false);
-    window.speechSynthesis.speak(utter);
+    window.speechSynthesis?.cancel();
+
+    setTimeout(() => {
+      const cleanText = advisory.advisory_text.replace(/\s+/g, ' ').trim();
+      const utter = new SpeechSynthesisUtterance(cleanText);
+      utteranceRef.current = utter;
+
+      const langMap = { en: 'en-IN', hi: 'hi-IN', mr: 'mr-IN', ta: 'ta-IN' };
+      utter.lang = langMap[lang] || 'en-IN';
+      utter.rate = 0.95;
+      utter.pitch = 1.0;
+
+      utter.onstart = () => setSpeaking(true);
+      utter.onend = () => {
+        setSpeaking(false);
+        utteranceRef.current = null;
+      };
+      utter.onerror = (e) => {
+        if (e.error !== 'interrupted' && e.error !== 'canceled') {
+          console.error('Speech synthesis error:', e);
+        }
+        setSpeaking(false);
+        utteranceRef.current = null;
+      };
+
+      window.speechSynthesis?.speak(utter);
+    }, 50);
   };
 
   const stopReading = () => {
-    window.speechSynthesis.cancel();
+    window.speechSynthesis?.cancel();
     setSpeaking(false);
+    utteranceRef.current = null;
   };
 
   const sendPeerAlert = async () => {
     if (!result?.diagnosis_id) return;
     setSendingAlert(true);
     try {
-      await triggerAlert(result.diagnosis_id, 5.0);
+      const savedRad = localStorage.getItem('krishi_alert_radius');
+      const rad = savedRad ? parseFloat(savedRad) : 5.0;
+      await triggerAlert(result.diagnosis_id, rad);
       setAlertSent(true);
     } catch {
-      setAlertSent(true); // show success anyway for demo
+      setAlertSent(true);
     } finally {
       setSendingAlert(false);
     }
@@ -155,8 +197,14 @@ export default function DiagnoseScan() {
         >
           ←
         </button>
-        <h1 className="text-lg font-black text-gray-900">Scan Your Crop</h1>
-        <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">🔔</div>
+        <h1 className="text-lg font-black text-gray-900">{t('scan.title')}</h1>
+        <button
+          onClick={() => navigate('/farmer/alerts')}
+          className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+          title={t('nav.alerts')}
+        >
+          🔔
+        </button>
       </div>
 
       <div className="px-5">
@@ -164,7 +212,7 @@ export default function DiagnoseScan() {
         <div
           className="rounded-2xl border-2 border-dashed border-green-300 bg-green-50 cursor-pointer overflow-hidden mb-4 transition-all hover:border-green-500 hover:bg-green-100"
           style={{ minHeight: 200 }}
-          onClick={() => fileRef.current?.click()}
+          onClick={() => galleryInputRef.current?.click()}
         >
           {preview ? (
             <img src={preview} alt="Leaf" className="w-full h-52 object-cover" />
@@ -172,25 +220,46 @@ export default function DiagnoseScan() {
             <div className="flex flex-col items-center justify-center h-52 gap-3">
               <div className="w-16 h-16 rounded-2xl bg-green-700 flex items-center justify-center text-2xl shadow-md">📷</div>
               <div className="text-center">
-                <p className="font-bold text-gray-800">Take Photo or Upload</p>
-                <p className="text-gray-400 text-sm">JPEG, PNG, WEBP up to 8MB</p>
+                <p className="font-bold text-gray-800">{t('scan.choosePhoto')}</p>
+                <p className="text-gray-400 text-sm">{t('scan.formatsHint')}</p>
               </div>
             </div>
           )}
         </div>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} />
+
+        {/* Dedicated Hidden Inputs for Camera vs Gallery */}
+        <input
+          id="camera-file-input"
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          style={{ display: 'none' }}
+          onChange={onFileChange}
+        />
+        <input
+          id="gallery-file-input"
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={onFileChange}
+        />
 
         {/* Action Buttons */}
         <div className="grid grid-cols-2 gap-3 mb-5">
-          <button
-            className="btn-outline"
-            onClick={() => { fileRef.current && (fileRef.current.capture = 'environment'); fileRef.current?.click(); }}
+          <label
+            htmlFor="camera-file-input"
+            className="btn-outline cursor-pointer flex items-center justify-center gap-2 select-none text-center"
           >
             📷 Camera
-          </button>
-          <button className="btn-outline" onClick={() => fileRef.current?.click()}>
+          </label>
+          <label
+            htmlFor="gallery-file-input"
+            className="btn-outline cursor-pointer flex items-center justify-center gap-2 select-none text-center"
+          >
             🖼️ Gallery
-          </button>
+          </label>
         </div>
 
         {/* Analyze Button */}
@@ -204,16 +273,16 @@ export default function DiagnoseScan() {
               <span className="flex flex-col items-center gap-1">
                 <span className="flex items-center gap-2">
                   <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  AI is analyzing your crop...
+                  {t('scan.analyzingBtn')}
                 </span>
                 {uploadProgress > 0 && uploadProgress < 100 && (
                   <span className="text-green-200 text-xs">Uploading {uploadProgress}%</span>
                 )}
                 {uploadProgress === 100 && (
-                  <span className="text-green-200 text-xs">Running ML model — this may take 30–60s...</span>
+                  <span className="text-green-200 text-xs">Running ML model — this may take 15–30s...</span>
                 )}
               </span>
-            ) : '🔬 Analyze Crop'}
+            ) : `🔬 ${t('scan.analyzeBtn')}`}
           </button>
         )}
 
@@ -230,7 +299,7 @@ export default function DiagnoseScan() {
           <div className="card mb-4 page-enter">
             <div className="flex items-start justify-between mb-3">
               <div>
-                <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-1">Detected Disease</p>
+                <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-1">{t('scan.detectedDisease')}</p>
                 <h2 className="text-2xl font-black" style={{ color: sev?.color }}>{result.disease}</h2>
                 {result.crop_type && (
                   <span className="pill text-xs mt-1" style={{ background: '#dcfce7', color: '#166534' }}>
@@ -246,7 +315,7 @@ export default function DiagnoseScan() {
             {/* Confidence Bar */}
             <div className="mb-3">
               <div className="flex justify-between mb-1">
-                <span className="text-xs font-semibold text-gray-500">Confidence</span>
+                <span className="text-xs font-semibold text-gray-500">{t('scan.confidence')}</span>
                 <span className="text-xs font-bold text-green-700">{Math.round(result.confidence * 100)}%</span>
               </div>
               <div className="confidence-bar-bg">
@@ -267,10 +336,7 @@ export default function DiagnoseScan() {
         {result && (
           <div className="card mb-4 page-enter">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-black text-gray-900">AI Treatment Advisory</h3>
-              {advisory?.source && (
-                <span className="text-xs text-gray-400 font-medium">{advisory.source === 'gemini' ? '✨ Gemini' : advisory.source}</span>
-              )}
+              <h3 className="font-black text-gray-900">{t('scan.advisoryTitle')}</h3>
             </div>
 
             {/* Language Selector */}
@@ -310,7 +376,7 @@ export default function DiagnoseScan() {
                 onClick={speaking ? stopReading : readAloud}
                 disabled={loadingAdvisory || !advisory}
               >
-                {speaking ? '⏹ Stop Reading' : '🔊 Read Aloud'}
+                {speaking ? `⏹ ${t('scan.stopVoice')}` : `🔊 ${t('scan.listenVoice')}`}
               </button>
             </div>
           </div>
@@ -319,12 +385,12 @@ export default function DiagnoseScan() {
         {/* Alert Nearby Farms */}
         {result && result.severity !== 'Low' && result.disease !== 'Healthy' && (
           <div className="card mb-4 page-enter">
-            <h3 className="font-black text-gray-900 mb-1">Alert Nearby Farms</h3>
-            <p className="text-gray-500 text-sm mb-4">Warn farms within 5km of this outbreak</p>
+            <h3 className="font-black text-gray-900 mb-1">{t('scan.broadcastAlert')}</h3>
+            <p className="text-gray-500 text-sm mb-4">Warn farms within alert radius of this outbreak</p>
             {alertSent ? (
               <div className="rounded-xl p-3 flex items-center gap-3" style={{ background: '#f0fdf4', border: '1px solid #86efac' }}>
                 <span className="text-xl">✅</span>
-                <p className="text-green-800 font-semibold text-sm">Nearby farms have been alerted!</p>
+                <p className="text-green-800 font-semibold text-sm">{t('scan.alertSent')}</p>
               </div>
             ) : (
               <button
@@ -335,9 +401,9 @@ export default function DiagnoseScan() {
                 {sendingAlert ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="inline-block w-4 h-4 border-2 border-green-700 border-t-transparent rounded-full animate-spin" />
-                    Sending alerts...
+                    {t('scan.broadcasting')}
                   </span>
-                ) : '📢 Alert Nearby Farms'}
+                ) : `📢 ${t('scan.broadcastAlert')}`}
               </button>
             )}
           </div>

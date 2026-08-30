@@ -7,6 +7,8 @@ const SEVERITY_STYLE = {
   High:     { bg: '#fff7ed', color: '#9a3412', badge: '#ea580c' },
   Medium:   { bg: '#fefce8', color: '#92400e', badge: '#ca8a04' },
   Low:      { bg: '#f0fdf4', color: '#166534', badge: '#16a34a' },
+  None:     { bg: '#f0fdf4', color: '#166534', badge: '#16a34a' },
+  Unknown:  { bg: '#f9fafb', color: '#374151', badge: '#6b7280' },
 };
 
 const STATUS_FILTERS = ['All', 'pending', 'approved', 'rejected', 'auto_confirmed'];
@@ -32,7 +34,15 @@ export default function ExpertQueue() {
 
   const displayed = filter === 'All' ? queue : queue.filter((d) => d.expert_status === filter);
 
-  const pending = queue.filter(d => d.expert_status === 'pending').length;
+  const counts = {
+    All: queue.length,
+    pending: queue.filter(d => d.expert_status === 'pending').length,
+    approved: queue.filter(d => d.expert_status === 'approved').length,
+    rejected: queue.filter(d => d.expert_status === 'rejected').length,
+    auto_confirmed: queue.filter(d => d.expert_status === 'auto_confirmed').length,
+  };
+
+  const pending = counts.pending;
 
   const doAction = async (id, action) => {
     setActionLoading((prev) => ({ ...prev, [id]: action }));
@@ -43,6 +53,7 @@ export default function ExpertQueue() {
       });
       fetchQueue();
       setExpandedId(null);
+      setFilter(action === 'approve' ? 'approved' : 'rejected');
     } catch (err) {
       alert(err?.response?.data?.detail || 'Action failed. Please try again.');
     } finally {
@@ -94,7 +105,7 @@ export default function ExpertQueue() {
                   : { background: '#f3f4f6', color: '#6b7280' }
               }
             >
-              {f} {f === 'pending' && pending > 0 ? `(${pending})` : ''}
+              {f.replace('_', ' ')} ({counts[f] || 0})
             </button>
           ))}
         </div>
@@ -132,7 +143,7 @@ export default function ExpertQueue() {
                     >
                       {d.image_path ? (
                         <img
-                          src={`${import.meta.env.VITE_API_BASE_URL}/uploads/${d.image_path.split('/').pop()}`}
+                          src={`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'}/uploads/${d.image_path.split(/[/\\]/).pop()}`}
                           alt="leaf"
                           className="w-full h-full object-cover"
                           onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '🌿'; }}

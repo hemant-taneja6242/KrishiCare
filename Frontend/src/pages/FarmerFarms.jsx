@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { listFarms, createFarm } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import BottomTabBar from '../components/BottomTabBar';
@@ -7,13 +8,53 @@ import BottomTabBar from '../components/BottomTabBar';
 const CROP_EMOJIS = { Rice: '🌾', Wheat: '🌿', Tomato: '🍅', Potato: '🥔', Sugarcane: '🎋', Cotton: '☁️' };
 
 export default function FarmerFarms() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [farms, setFarms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ farmer_name: user?.name || '', latitude: user?.latitude || 19.99, longitude: user?.longitude || 73.78, primary_crop: '', village: '', district: '', state: 'Maharashtra' });
+  const [form, setForm] = useState({
+    farmer_name: user?.name || '',
+    latitude: user?.latitude || 19.99,
+    longitude: user?.longitude || 73.78,
+    primary_crop: '',
+    village: '',
+    district: '',
+    state: 'Maharashtra',
+  });
   const [saving, setSaving] = useState(false);
+  const [geoStatus, setGeoStatus] = useState(null); // 'locating' | 'success' | 'denied' | 'unsupported' | null
+
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      setGeoStatus('unsupported');
+      return;
+    }
+    setGeoStatus('locating');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = parseFloat(pos.coords.latitude.toFixed(4));
+        const lon = parseFloat(pos.coords.longitude.toFixed(4));
+        setForm((prev) => ({
+          ...prev,
+          latitude: lat,
+          longitude: lon,
+        }));
+        setGeoStatus('success');
+      },
+      (err) => {
+        console.warn('Geolocation error:', err?.message);
+        setGeoStatus('denied');
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  };
+
+  const openAddForm = () => {
+    setShowForm(true);
+    detectLocation();
+  };
 
   const fetchFarms = () => {
     listFarms()
@@ -31,7 +72,16 @@ export default function FarmerFarms() {
       await createFarm(form);
       fetchFarms();
       setShowForm(false);
-      setForm({ farmer_name: user?.name || '', latitude: user?.latitude || 19.99, longitude: user?.longitude || 73.78, primary_crop: '', village: '', district: '', state: 'Maharashtra' });
+      setForm({
+        farmer_name: user?.name || '',
+        latitude: user?.latitude || 19.99,
+        longitude: user?.longitude || 73.78,
+        primary_crop: '',
+        village: '',
+        district: '',
+        state: 'Maharashtra',
+      });
+      setGeoStatus(null);
     } catch (err) {
       alert(err?.response?.data?.detail || 'Failed to add farm');
     } finally {
@@ -45,42 +95,70 @@ export default function FarmerFarms() {
     <div className="mobile-app page-enter" style={{ paddingBottom: 90 }}>
       <div className="flex items-center justify-between px-5 pt-14 pb-4">
         <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">←</button>
-        <h1 className="text-lg font-black text-gray-900">My Farms</h1>
-        <button onClick={() => setShowForm(true)} className="w-10 h-10 rounded-full bg-green-700 flex items-center justify-center text-white font-bold text-xl hover:bg-green-800 transition-colors">+</button>
+        <h1 className="text-lg font-black text-gray-900">{t('farms.title')}</h1>
+        <button onClick={openAddForm} className="w-10 h-10 rounded-full bg-green-700 flex items-center justify-center text-white font-bold text-xl hover:bg-green-800 transition-colors">+</button>
       </div>
 
       <div className="px-5">
         {/* Add Farm Form */}
         {showForm && (
           <div className="card mb-5 page-enter">
-            <h3 className="font-black text-gray-900 mb-4">Add New Farm</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-black text-gray-900">{t('farms.addNewFarmTitle')}</h3>
+              <button
+                type="button"
+                onClick={detectLocation}
+                className="text-xs font-bold text-green-700 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg border border-green-200 transition"
+              >
+                📍 Use My Location
+              </button>
+            </div>
+
+            {/* Geolocation feedback note */}
+            {geoStatus === 'locating' && (
+              <div className="rounded-xl p-2.5 mb-3 bg-blue-50 border border-blue-200 text-xs text-blue-800 flex items-center gap-2">
+                <span className="inline-block w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                Detecting device GPS coordinates...
+              </div>
+            )}
+            {geoStatus === 'success' && (
+              <div className="rounded-xl p-2.5 mb-3 bg-green-50 border border-green-200 text-xs text-green-800 flex items-center gap-1.5">
+                <span>✅</span> Coordinates auto-detected from device GPS
+              </div>
+            )}
+            {geoStatus === 'denied' && (
+              <div className="rounded-xl p-2.5 mb-3 bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-1.5">
+                <span>⚠️</span> Location access denied — enter manually.
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="flex flex-col gap-3">
               {[
                 { key: 'farmer_name', label: 'Farmer Name', type: 'text', placeholder: 'Rajesh Kumar' },
-                { key: 'primary_crop', label: 'Primary Crop', type: 'text', placeholder: 'Rice, Wheat, Tomato...' },
-                { key: 'village', label: 'Village', type: 'text', placeholder: 'Village name' },
-                { key: 'district', label: 'District', type: 'text', placeholder: 'Nashik' },
-                { key: 'latitude', label: 'Latitude', type: 'number', placeholder: '19.99' },
-                { key: 'longitude', label: 'Longitude', type: 'number', placeholder: '73.78' },
+                { key: 'primary_crop', label: t('farms.crop'), type: 'text', placeholder: 'Rice, Wheat, Tomato...' },
+                { key: 'village', label: t('farms.village'), type: 'text', placeholder: 'Village name' },
+                { key: 'district', label: t('farms.district'), type: 'text', placeholder: 'Nashik' },
+                { key: 'latitude', label: 'Latitude (auto-filled)', type: 'number', placeholder: '19.99' },
+                { key: 'longitude', label: 'Longitude (auto-filled)', type: 'number', placeholder: '73.78' },
               ].map((f) => (
                 <div key={f.key}>
                   <label className="block text-xs font-semibold text-gray-500 mb-1">{f.label}</label>
                   <input
                     type={f.type}
-                    step={f.type === 'number' ? '0.001' : undefined}
+                    step={f.type === 'number' ? '0.0001' : undefined}
                     placeholder={f.placeholder}
                     value={form[f.key]}
                     required={['farmer_name', 'latitude', 'longitude'].includes(f.key)}
-                    onChange={(e) => setForm((p) => ({ ...p, [f.key]: f.type === 'number' ? parseFloat(e.target.value) : e.target.value }))}
+                    onChange={(e) => setForm((p) => ({ ...p, [f.key]: f.type === 'number' ? parseFloat(e.target.value) || '' : e.target.value }))}
                     className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:border-green-500 transition"
                   />
                 </div>
               ))}
               <div className="flex gap-3 mt-2">
                 <button type="submit" className="btn-primary" disabled={saving}>
-                  {saving ? 'Saving...' : '✅ Add Farm'}
+                  {saving ? t('common.loading') : `✅ ${t('farms.saveFarmBtn')}`}
                 </button>
-                <button type="button" className="btn-outline" onClick={() => setShowForm(false)}>Cancel</button>
+                <button type="button" className="btn-outline" onClick={() => setShowForm(false)}>{t('common.cancel')}</button>
               </div>
             </form>
           </div>
@@ -93,9 +171,9 @@ export default function FarmerFarms() {
         ) : farms.length === 0 ? (
           <div className="card text-center py-12">
             <div className="text-5xl mb-4">🌾</div>
-            <p className="font-bold text-gray-700">No farms registered</p>
-            <p className="text-gray-400 text-sm mt-2 mb-5">Add your first farm to start monitoring</p>
-            <button onClick={() => setShowForm(true)} className="btn-primary" style={{ width: 'auto', padding: '12px 32px' }}>Add Farm</button>
+            <p className="font-bold text-gray-700">{t('farms.noFarms')}</p>
+            <p className="text-gray-400 text-sm mt-2 mb-5">{t('home.noScans')}</p>
+            <button onClick={() => setShowForm(true)} className="btn-primary" style={{ width: 'auto', padding: '12px 32px' }}>{t('farms.addFarmBtn')}</button>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -123,7 +201,7 @@ export default function FarmerFarms() {
                       onClick={(e) => { e.stopPropagation(); navigate('/farmer/scan'); }}
                       className="text-xs font-semibold text-green-700 hover:text-green-900"
                     >
-                      Scan →
+                      {t('nav.scanCrop')} →
                     </button>
                   </div>
                 </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { listAlerts, getExpertQueue, getHotspots } from '../api/client';
+import { listAlerts, getExpertQueue, getHotspots, getActiveExperts } from '../api/client';
 import AdminSidebar from '../components/AdminSidebar';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -7,7 +7,7 @@ import {
 } from 'recharts';
 
 const SEVERITY_COLORS = {
-  Critical: '#dc2626', High: '#ea580c', Medium: '#ca8a04', Low: '#16a34a',
+  Critical: '#dc2626', High: '#ea580c', Medium: '#ca8a04', Low: '#16a34a', None: '#16a34a', Unknown: '#6b7280',
 };
 
 const MOCK_MONTHLY = [
@@ -29,6 +29,7 @@ export default function AdminDashboard() {
   const [queue, setQueue] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [hotspots, setHotspots] = useState([]);
+  const [experts, setExperts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -36,22 +37,25 @@ export default function AdminDashboard() {
       getExpertQueue(),
       listAlerts(),
       getHotspots(100),
-    ]).then(([qRes, aRes, hRes]) => {
+      getActiveExperts(),
+    ]).then(([qRes, aRes, hRes, eRes]) => {
       if (qRes.status === 'fulfilled') setQueue(qRes.value.data || []);
       if (aRes.status === 'fulfilled') setAlerts(aRes.value.data || []);
       if (hRes.status === 'fulfilled') setHotspots(hRes.value.data?.hotspots || []);
+      if (eRes.status === 'fulfilled') setExperts(eRes.value.data?.experts || []);
     }).finally(() => setLoading(false));
   }, []);
 
   const pendingCount = queue.filter(d => d.expert_status === 'pending').length;
   const criticalCount = hotspots.filter(h => h.severity === 'Critical').length;
   const districtsAffected = [...new Set(hotspots.map(h => h.district).filter(Boolean))].length;
+  const activeAlertsCount = alerts.filter(a => a.status !== 'Resolved').length;
 
   const stats = [
     { label: 'Total Diagnoses', value: queue.length + 247, icon: '📋', color: '#1F5F3F', trend: '+12%' },
-    { label: 'Active Alerts',   value: alerts.length || 12,  icon: '🔔', color: '#ea580c', trend: '+3' },
+    { label: 'Active Alerts',   value: activeAlertsCount || alerts.length || 12,  icon: '🔔', color: '#ea580c', trend: '+3' },
     { label: 'Farms Monitored', value: 1840,                  icon: '🌾', color: '#2D6A4F', trend: '1,840' },
-    { label: 'Experts Active',  value: 8,                     icon: '👩‍🔬', color: '#7c3aed', trend: 'Online' },
+    { label: 'Experts Active',  value: experts.length || 8,   icon: '👩‍🔬', color: '#7c3aed', trend: 'Online' },
   ];
 
   const recentDiags = queue.slice(0, 5);
@@ -70,9 +74,6 @@ export default function AdminDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="pill text-xs" style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #86efac' }}>
-              ✅ Backend Connected
-            </span>
             <div className="w-10 h-10 rounded-full bg-green-700 flex items-center justify-center text-white font-bold text-sm">A</div>
           </div>
         </div>
