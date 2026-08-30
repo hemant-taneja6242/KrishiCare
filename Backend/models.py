@@ -45,6 +45,7 @@ class Diagnosis(Base):
     crop = Column(String, nullable=True)
     disease_label = Column(String, nullable=False)
     confidence = Column(Float, nullable=False)
+    diagnosis_type = Column(String, default="disease")  # disease / pest
     severity = Column(String, default="Unknown")  # Low/Medium/High/Critical
     image_path = Column(String, nullable=True)
     advisory_text = Column(Text, nullable=True)
@@ -56,6 +57,14 @@ class Diagnosis(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     farm = relationship("Farm", back_populates="diagnoses")
+
+    @property
+    def type(self):
+        return getattr(self, "diagnosis_type", "disease") or "disease"
+
+    @property
+    def name(self):
+        return self.disease_label
 
 
 class Alert(Base):
@@ -84,6 +93,13 @@ class AdvisoryCache(Base):
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE diagnoses ADD COLUMN diagnosis_type VARCHAR DEFAULT 'disease'"))
+            conn.commit()
+        except Exception:
+            pass
 
 
 def get_db():

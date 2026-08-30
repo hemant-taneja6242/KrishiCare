@@ -86,10 +86,14 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 @app.get("/api/health")
 def health():
+    disease_loaded = getattr(ml_inference, "_disease_model", None) is not None or getattr(ml_inference, "_model", None) is not None
+    pest_loaded = getattr(ml_inference, "_pest_model", None) is not None
     return {
         "status": "ok",
-        "model_loaded": ml_inference._model is not None,
-        "model_name": ml_inference._active_model_name,
+        "model_loaded": disease_loaded,
+        "disease_model_loaded": disease_loaded,
+        "pest_model_loaded": pest_loaded,
+        "disease_model": getattr(ml_inference, "_active_disease_model_name", None) or getattr(ml_inference, "_active_model_name", None),
     }
 
 

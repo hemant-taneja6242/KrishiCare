@@ -155,6 +155,11 @@ export default function ExpertQueue() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <p className="font-black text-gray-900 text-lg truncate">{d.disease_label}</p>
+                        {d.type === 'pest' && (
+                          <span className="pill text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 flex-shrink-0">
+                            🐛 Pest
+                          </span>
+                        )}
                         <span className="pill text-xs flex-shrink-0" style={{ background: sev.bg, color: sev.color, border: `1px solid ${sev.badge}` }}>
                           {d.severity}
                         </span>

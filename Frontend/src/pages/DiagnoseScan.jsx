@@ -21,6 +21,18 @@ const LANGS = [
   { code: 'ta', label: 'தமி' },
 ];
 
+// Target crops with solid, verified multi-class coverage in model
+// Thin-coverage crops (e.g., Bell Pepper: 2 classes) can be toggled based on demo strategy
+const CROP_OPTIONS = [
+  { id: 'Tomato', label: '🍅 Tomato' },
+  { id: 'Potato', label: '🥔 Potato' },
+  { id: 'Corn', label: '🌽 Corn' },
+  { id: 'Grape', label: '🍇 Grape' },
+  { id: 'Apple', label: '🍎 Apple' },
+  // { id: 'Bell Pepper', label: '🫑 Pepper (Bacterial Spot only)' },
+  { id: 'Auto', label: '🌾 Auto-Detect' },
+];
+
 export default function DiagnoseScan() {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -29,6 +41,10 @@ export default function DiagnoseScan() {
   const galleryInputRef = useRef();
   const utteranceRef = useRef(null);
 
+  const [selectedCrop, setSelectedCrop] = useState(() => {
+    const valid = CROP_OPTIONS.some((c) => c.id === user?.primaryCrop);
+    return valid ? user.primaryCrop : 'Tomato';
+  });
   const [preview, setPreview] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [diagnosing, setDiagnosing] = useState(false);
@@ -101,10 +117,13 @@ export default function DiagnoseScan() {
     setUploadProgress(0);
 
     try {
+      const cropToSend = selectedCrop === 'Auto' ? undefined : selectedCrop;
+      console.log('[DiagnoseScan] Sending diagnosis request with cropHint:', cropToSend);
       const r = await diagnoseImage(
         selectedFile,
         {
           farmId: user?.farmId,
+          cropHint: cropToSend,
           latitude: user?.latitude,
           longitude: user?.longitude,
         },
@@ -208,6 +227,32 @@ export default function DiagnoseScan() {
       </div>
 
       <div className="px-5">
+        {/* Crop Selection Filter */}
+        <div className="mb-4">
+          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
+            🌱 Target Crop (AI Context Filter)
+          </label>
+          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            {CROP_OPTIONS.map((c) => {
+              const active = selectedCrop === c.id;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setSelectedCrop(c.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                    active
+                      ? 'bg-green-700 text-white border-green-700 shadow-sm'
+                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Upload Area */}
         <div
           className="rounded-2xl border-2 border-dashed border-green-300 bg-green-50 cursor-pointer overflow-hidden mb-4 transition-all hover:border-green-500 hover:bg-green-100"
@@ -295,42 +340,102 @@ export default function DiagnoseScan() {
         )}
 
         {/* Result Card */}
-        {result && (
-          <div className="card mb-4 page-enter">
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-1">{t('scan.detectedDisease')}</p>
-                <h2 className="text-2xl font-black" style={{ color: sev?.color }}>{result.disease}</h2>
-                {result.crop_type && (
-                  <span className="pill text-xs mt-1" style={{ background: '#dcfce7', color: '#166534' }}>
-                    🌾 {result.crop_type}
+        {result && (() => {
+          const isUncertain = result.is_uncertain || result.confidence < 0.60;
+          return (
+            <div
+              className="card mb-4 page-enter transition-all"
+              style={isUncertain ? { border: '1.5px solid #fcd34d', background: '#fffdf5' } : undefined}
+            >
+              {/* Low confidence cautionary banner */}
+              {isUncertain && (
+                <div className="rounded-xl p-3 mb-3.5 flex items-start gap-2.5" style={{ background: '#fefce8', border: '1px solid #fde68a' }}>
+                  <span className="text-xl flex-shrink-0">⚠️</span>
+                  <div>
+                    <p className="text-amber-900 text-xs font-black uppercase tracking-wider mb-0.5">
+                      Inconclusive Analysis ({Math.round(result.confidence * 100)}% Confidence)
+                    </p>
+                    <p className="text-amber-800 text-xs leading-relaxed">
+                      AI confidence is below the verified clinical threshold. This finding is treated as an unconfirmed estimate and has been routed to our expert queue for specialist validation.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                      {isUncertain
+                        ? '⚠️ Preliminary AI Guess'
+                        : (result.type === 'pest' ? '🐛 Detected Pest Infestation' : t('scan.detectedDisease'))}
+                    </p>
+                    {result.type === 'pest' && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                        PEST
+                      </span>
+                    )}
+                    {isUncertain && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200 text-amber-900 border border-amber-400">
+                        UNCONFIRMED
+                      </span>
+                    )}
+                  </div>
+
+                  {isUncertain ? (
+                    <h2 className="text-xl font-bold text-amber-950 italic">
+                      {result.name || result.disease} <span className="text-xs font-normal text-amber-700 not-italic">(Awaiting Expert)</span>
+                    </h2>
+                  ) : (
+                    <h2 className="text-2xl font-black" style={{ color: sev?.color }}>{result.name || result.disease}</h2>
+                  )}
+
+                  {result.crop_type && (
+                    <span className="pill text-xs mt-1" style={{ background: '#dcfce7', color: '#166534' }}>
+                      🌾 {result.crop_type}
+                    </span>
+                  )}
+                </div>
+
+                {isUncertain ? (
+                  <span className="pill" style={{ background: '#fef3c7', color: '#92400e', border: '1.5px solid #fcd34d' }}>
+                    ⚠️ Awaiting Review
+                  </span>
+                ) : (
+                  <span className="pill" style={{ background: sev?.bg, color: sev?.color, border: `1.5px solid ${sev?.badge}` }}>
+                    {sev?.emoji} {result.severity}
                   </span>
                 )}
               </div>
-              <span className="pill" style={{ background: sev?.bg, color: sev?.color, border: `1.5px solid ${sev?.badge}` }}>
-                {sev?.emoji} {result.severity}
-              </span>
-            </div>
 
-            {/* Confidence Bar */}
-            <div className="mb-3">
-              <div className="flex justify-between mb-1">
-                <span className="text-xs font-semibold text-gray-500">{t('scan.confidence')}</span>
-                <span className="text-xs font-bold text-green-700">{Math.round(result.confidence * 100)}%</span>
+              {/* Confidence Bar */}
+              <div className="mb-3">
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs font-semibold text-gray-500">{t('scan.confidence')}</span>
+                  <span className={`text-xs font-bold ${isUncertain ? 'text-amber-700' : 'text-green-700'}`}>
+                    {Math.round(result.confidence * 100)}% {isUncertain ? '(Low)' : ''}
+                  </span>
+                </div>
+                <div className="confidence-bar-bg">
+                  <div
+                    className="confidence-bar-fill"
+                    style={{
+                      width: `${result.confidence * 100}%`,
+                      background: isUncertain ? '#f59e0b' : undefined,
+                    }}
+                  />
+                </div>
               </div>
-              <div className="confidence-bar-bg">
-                <div className="confidence-bar-fill" style={{ width: `${result.confidence * 100}%` }} />
-              </div>
-            </div>
 
-            {result.needs_expert_review && (
-              <div className="rounded-xl p-3 flex items-center gap-2" style={{ background: '#fefce8', border: '1px solid #fcd34d' }}>
-                <span className="text-base">⚠️</span>
-                <p className="text-yellow-800 text-xs font-medium">Low confidence — sent to expert review queue</p>
-              </div>
-            )}
-          </div>
-        )}
+              {result.needs_expert_review && !isUncertain && (
+                <div className="rounded-xl p-3 flex items-center gap-2" style={{ background: '#fefce8', border: '1px solid #fcd34d' }}>
+                  <span className="text-base">⚠️</span>
+                  <p className="text-yellow-800 text-xs font-medium">Low confidence — sent to expert review queue</p>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Advisory Section */}
         {result && (

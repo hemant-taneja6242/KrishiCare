@@ -279,6 +279,8 @@ def hotspots(limit: int = 50, db: Session = Depends(get_db)):
             "latitude": diag.latitude or farm.latitude,
             "longitude": diag.longitude or farm.longitude,
             "disease": diag.disease_label,
+            "type": getattr(diag, "diagnosis_type", "disease") or "disease",
+            "name": diag.disease_label,
             "crop": diag.crop,
             "severity": diag.severity,
             "reported_at": diag.created_at,

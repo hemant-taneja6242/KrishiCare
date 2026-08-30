@@ -39,8 +39,11 @@ async def diagnose(
     crop_hint: str | None = Form(None),
     latitude: float | None = Form(None),
     longitude: float | None = Form(None),
+    mode: str | None = Form("auto"),
     db: Session = Depends(get_db),
 ):
+    logger.info("POST /api/diagnose: filename=%s, crop_hint=%r, mode=%r, farm_id=%s", image.filename, crop_hint, mode, farm_id)
+
     # --- validate upload ---
     if image.content_type not in ALLOWED_CONTENT_TYPES:
         raise HTTPException(
@@ -62,9 +65,11 @@ async def diagnose(
     with open(saved_path, "wb") as f:
         f.write(contents)
 
+    clean_crop = crop_hint.strip() if (crop_hint and crop_hint.strip() and crop_hint.strip().lower() not in ("auto", "all", "unknown", "other", "none", "null", "undefined")) else None
+
     # --- run inference ---
     try:
-        result = ml_inference.predict(contents)
+        result = ml_inference.predict(contents, mode=mode or "auto", crop_hint=clean_crop)
     except ValueError as e:
         # not a readable image -> friendly error, not a 500
         raise HTTPException(
@@ -78,17 +83,22 @@ async def diagnose(
             detail="The AI model is temporarily unavailable. Please try again.",
         )
 
-    disease = result["disease"]
+    diag_type = result.get("type", "disease")
+    name = result.get("name", result.get("disease", "Unknown"))
+    disease = result.get("disease", name)
     confidence = result["confidence"]
-    crop_type = result.get("crop") or crop_hint
+    # The returned crop_type MUST ALWAYS match clean_crop if one was provided!
+    crop_type = clean_crop or result.get("crop") or "Crops"
     severity = result["severity"]
-    needs_review = confidence < EXPERT_REVIEW_THRESHOLD and disease != "Healthy"
+    is_uncertain = result.get("is_uncertain", False) or (confidence < 0.60)
+    needs_review = (confidence < EXPERT_REVIEW_THRESHOLD and disease != "Healthy") or is_uncertain
 
     # --- persist ---
     diagnosis = Diagnosis(
         farm_id=farm_id,
         crop=crop_type,
-        disease_label=disease,
+        disease_label=name,
+        diagnosis_type=diag_type,
         confidence=confidence,
         severity=severity,
         image_path=saved_path,
@@ -103,10 +113,13 @@ async def diagnose(
 
     return DiagnoseResponse(
         diagnosis_id=diagnosis.id,
+        type=diag_type,
+        name=name,
         disease=disease,
         crop_type=crop_type,
         confidence=confidence,
         severity=severity,
+        is_uncertain=is_uncertain,
         needs_expert_review=needs_review,
         image_path=saved_path,
     )

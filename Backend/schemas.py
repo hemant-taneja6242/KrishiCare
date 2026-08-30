@@ -39,10 +39,13 @@ class FarmOut(BaseModel):
 
 class DiagnoseResponse(BaseModel):
     diagnosis_id: int
-    disease: str
+    type: str = "disease"  # disease | pest
+    name: str              # specific disease or pest name
+    disease: str           # backward-compatible alias matching name
     crop_type: Optional[str] = None
     confidence: float
     severity: str
+    is_uncertain: bool = False
     needs_expert_review: bool
     image_path: Optional[str] = None
 
@@ -52,8 +55,11 @@ class DiagnosisOut(BaseModel):
     farm_id: Optional[int]
     crop: Optional[str]
     disease_label: str
+    type: Optional[str] = "disease"
+    name: Optional[str] = None
     confidence: float
     severity: str
+    is_uncertain: bool = False
     expert_status: str
     expert_note: Optional[str] = None
     image_path: Optional[str] = None
