@@ -6,9 +6,10 @@ import { useAuth } from '../context/AuthContext';
 import BottomTabBar from '../components/BottomTabBar';
 
 const MOCK_ALERTS = [
-  { id: 1, message: 'Rice Blast detected 1.2 km from your farm. Check your Rice for similar symptoms.', created_at: new Date().toISOString(), distance: '1.2 km' },
-  { id: 2, message: 'Tomato Late Blight detected 2.8 km away — check your crop for similar symptoms.', created_at: new Date(Date.now() - 3600000).toISOString(), distance: '2.8 km' },
-  { id: 3, message: 'Powdery Mildew detected 4.1 km from your farm. Check for white powdery patches.', created_at: new Date(Date.now() - 86400000).toISOString(), distance: '4.1 km' },
+  { id: 1, message: '🔴 Early Blight detected 0.3 km from your farm in Ozar. Inspect your Tomato leaves immediately for brown concentric ring lesions.', created_at: new Date(Date.now() - 7200000).toISOString(), distance: '0.3 km' },
+  { id: 2, message: '🟠 Tomato Late Blight detected 2.8 km away in Niphad. Cool humid conditions — monitor for water-soaked spots on leaves and stems.', created_at: new Date(Date.now() - 28800000).toISOString(), distance: '2.8 km' },
+  { id: 3, message: '🟡 Powdery Mildew detected 3.5 km from your farm. Spray neem oil or sulfur-based fungicide as a preventive measure.', created_at: new Date(Date.now() - 86400000).toISOString(), distance: '3.5 km' },
+  { id: 4, message: '🔴 Rice Blast cluster in Ahmednagar (12 km away) — outbreak spreading rapidly. Avoid water-sharing from affected fields.', created_at: new Date(Date.now() - 172800000).toISOString(), distance: '12.0 km' },
 ];
 
 const SEVERITY_BY_DISEASE = (msg) => {

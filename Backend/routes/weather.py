@@ -233,28 +233,38 @@ def alerts_nearby(
 
 
 def _mock_hotspots() -> list[dict]:
-    """8 realistic Maharashtra points so the admin map has data to render
-    before P5's seed script has run."""
-    base = [
-        (19.99, 73.78, "Nashik"), (18.52, 73.85, "Pune"), (21.15, 79.09, "Nagpur"),
-        (19.87, 75.34, "Aurangabad"), (16.70, 74.24, "Kolhapur"), (20.93, 77.75, "Amravati"),
-        (17.68, 75.90, "Solapur"), (19.29, 76.75, "Jalna"),
-    ]
-    diseases = ["Rice Blast", "Tomato Late Blight", "Powdery Mildew", "Bacterial Blight"]
-    severities = ["Low", "Medium", "High", "Critical"]
+    """22 realistic Maharashtra disease hotspots for the admin map demo.
+    Spread across all major districts with predominantly Critical/High severity."""
     return [
-        {
-            "farm_id": None,
-            "farmer_name": f"Demo Farm {i + 1}",
-            "latitude": lat,
-            "longitude": lon,
-            "disease": diseases[i % len(diseases)],
-            "crop": None,
-            "severity": severities[i % len(severities)],
-            "reported_at": None,
-            "district": district,
-        }
-        for i, (lat, lon, district) in enumerate(base)
+        # ── CRITICAL (red) ─────────────────────────────────────────────────
+        {"farm_id": None, "farmer_name": "Ramesh Patil",    "latitude": 19.9975, "longitude": 73.7898, "disease": "Early Blight",              "crop": "Tomato",    "severity": "Critical", "district": "Nashik",      "reported_at": "2026-08-31T10:15:00"},
+        {"farm_id": None, "farmer_name": "Ganesh More",     "latitude": 19.0760, "longitude": 74.7480, "disease": "Rice Blast",                "crop": "Rice",      "severity": "Critical", "district": "Ahmednagar",  "reported_at": "2026-08-31T08:30:00"},
+        {"farm_id": None, "farmer_name": "Sudhir Kulkarni", "latitude": 18.5204, "longitude": 73.8567, "disease": "Northern Corn Leaf Blight", "crop": "Corn",      "severity": "Critical", "district": "Pune",        "reported_at": "2026-08-30T14:00:00"},
+        {"farm_id": None, "farmer_name": "Vijay Deshmukh",  "latitude": 21.1458, "longitude": 79.0882, "disease": "Rust",                      "crop": "Wheat",     "severity": "Critical", "district": "Nagpur",      "reported_at": "2026-08-30T16:20:00"},
+        {"farm_id": None, "farmer_name": "Praful Kale",     "latitude": 17.6880, "longitude": 74.0123, "disease": "Red Rot",                   "crop": "Sugarcane", "severity": "Critical", "district": "Satara",      "reported_at": "2026-08-29T11:00:00"},
+        {"farm_id": None, "farmer_name": "Santosh Jadhav",  "latitude": 18.3450, "longitude": 76.5670, "disease": "Bacterial Leaf Blight",     "crop": "Rice",      "severity": "Critical", "district": "Latur",       "reported_at": "2026-08-29T09:45:00"},
+        {"farm_id": None, "farmer_name": "Ajay Wagh",       "latitude": 19.8760, "longitude": 75.3420, "disease": "Tomato Late Blight",        "crop": "Tomato",    "severity": "Critical", "district": "Aurangabad",  "reported_at": "2026-08-28T17:30:00"},
+        {"farm_id": None, "farmer_name": "Nitin Shinde",    "latitude": 20.5510, "longitude": 75.0120, "disease": "Bacterial Blight",          "crop": "Cotton",    "severity": "Critical", "district": "Jalgaon",     "reported_at": "2026-08-28T13:10:00"},
+
+        # ── HIGH (orange) ──────────────────────────────────────────────────
+        {"farm_id": None, "farmer_name": "Anita Bhosale",   "latitude": 20.1150, "longitude": 74.7320, "disease": "Powdery Mildew",            "crop": "Grape",     "severity": "High",     "district": "Nashik",      "reported_at": "2026-08-31T06:00:00"},
+        {"farm_id": None, "farmer_name": "Suresh Gavhane",  "latitude": 16.7050, "longitude": 74.2430, "disease": "Rice Blast",                "crop": "Rice",      "severity": "High",     "district": "Kolhapur",    "reported_at": "2026-08-30T12:00:00"},
+        {"farm_id": None, "farmer_name": "Rekha Pawar",     "latitude": 20.9333, "longitude": 77.7500, "disease": "Downy Mildew",              "crop": "Cotton",    "severity": "High",     "district": "Amravati",    "reported_at": "2026-08-30T10:00:00"},
+        {"farm_id": None, "farmer_name": "Dilip Chavan",    "latitude": 19.2900, "longitude": 76.7500, "disease": "Purple Blotch",             "crop": "Onion",     "severity": "High",     "district": "Jalna",       "reported_at": "2026-08-29T15:00:00"},
+        {"farm_id": None, "farmer_name": "Kavita Mane",     "latitude": 17.6860, "longitude": 75.9010, "disease": "Rust",                      "crop": "Wheat",     "severity": "High",     "district": "Solapur",     "reported_at": "2026-08-29T13:30:00"},
+        {"farm_id": None, "farmer_name": "Tushar Dange",    "latitude": 16.8900, "longitude": 74.4560, "disease": "Sheath Blight",             "crop": "Rice",      "severity": "High",     "district": "Sangli",      "reported_at": "2026-08-28T09:00:00"},
+
+        # ── MEDIUM (yellow) ────────────────────────────────────────────────
+        {"farm_id": None, "farmer_name": "Meena Salunke",   "latitude": 20.0112, "longitude": 73.9450, "disease": "Powdery Mildew",            "crop": "Wheat",     "severity": "Medium",   "district": "Nashik",      "reported_at": "2026-08-31T04:00:00"},
+        {"farm_id": None, "farmer_name": "Rajan Narvekar",  "latitude": 19.9184, "longitude": 73.1233, "disease": "Anthracnose",               "crop": "Mango",     "severity": "Medium",   "district": "Nashik",      "reported_at": "2026-08-30T07:30:00"},
+        {"farm_id": None, "farmer_name": "Priya Talekar",   "latitude": 19.5680, "longitude": 74.0012, "disease": "Early Blight",              "crop": "Potato",    "severity": "Medium",   "district": "Ahmednagar",  "reported_at": "2026-08-29T14:00:00"},
+        {"farm_id": None, "farmer_name": "Asha Thombare",   "latitude": 18.9220, "longitude": 72.8347, "disease": "Downy Mildew",              "crop": "Onion",     "severity": "Medium",   "district": "Raigad",      "reported_at": "2026-08-28T11:20:00"},
+        {"farm_id": None, "farmer_name": "Hemant Deshpande","latitude": 19.1230, "longitude": 74.2130, "disease": "Bacterial Spot",            "crop": "Tomato",    "severity": "Medium",   "district": "Nashik",      "reported_at": "2026-08-27T16:45:00"},
+
+        # ── LOW (green) ────────────────────────────────────────────────────
+        {"farm_id": None, "farmer_name": "Sanjay Parab",    "latitude": 16.9902, "longitude": 73.3120, "disease": "Leaf Spot",                 "crop": "Cashew",    "severity": "Low",      "district": "Ratnagiri",   "reported_at": "2026-08-27T09:00:00"},
+        {"farm_id": None, "farmer_name": "Uma Gaikwad",     "latitude": 20.2667, "longitude": 78.1333, "disease": "Septoria Leaf Spot",        "crop": "Tomato",    "severity": "Low",      "district": "Yavatmal",    "reported_at": "2026-08-26T13:00:00"},
+        {"farm_id": None, "farmer_name": "Mohan Patke",     "latitude": 21.4666, "longitude": 80.0010, "disease": "Powdery Mildew",            "crop": "Soybean",   "severity": "Low",      "district": "Gondia",      "reported_at": "2026-08-25T10:00:00"},
     ]
 
 

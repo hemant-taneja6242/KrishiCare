@@ -30,6 +30,9 @@ export const diagnoseImage = (file, { farmId, cropHint, latitude, longitude } = 
   });
 };
 
+export const getDiagnoseHistory = (farmId) =>
+  api.get('/api/diagnose/history', { params: farmId ? { farm_id: farmId } : {} });
+
 // ── Advisory ──────────────────────────────────────
 export const getAdvisory = (disease, crop, lang = 'en') =>
   api.get('/api/advisory', { params: { disease, crop, lang } });

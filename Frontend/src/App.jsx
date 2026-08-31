@@ -9,6 +9,7 @@ import DiagnoseScan  from './pages/DiagnoseScan';
 import FarmerRisk    from './pages/FarmerRisk';
 import FarmerAlerts  from './pages/FarmerAlerts';
 import FarmerFarms   from './pages/FarmerFarms';
+import FarmerHistory  from './pages/FarmerHistory';
 import FarmerProfile from './pages/FarmerProfile';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminMap       from './pages/AdminMap';
@@ -57,7 +58,7 @@ function AppRoutes() {
       <Route path="/farmer/alerts"  element={<ProtectedRoute allowedRole="farmer"><FarmerAlerts /></ProtectedRoute>} />
       <Route path="/farmer/farms"          element={<ProtectedRoute allowedRole="farmer"><FarmerFarms /></ProtectedRoute>} />
       <Route path="/farmer/farms/:farmId"  element={<ProtectedRoute allowedRole="farmer"><FarmerFarms /></ProtectedRoute>} />
-      <Route path="/farmer/history"        element={<ProtectedRoute allowedRole="farmer"><DiagnoseScan /></ProtectedRoute>} />
+      <Route path="/farmer/history"        element={<ProtectedRoute allowedRole="farmer"><FarmerHistory /></ProtectedRoute>} />
       <Route path="/farmer/stats"   element={<ProtectedRoute allowedRole="farmer"><FarmerRisk /></ProtectedRoute>} />
       <Route path="/farmer/profile"          element={<ProtectedRoute allowedRole="farmer"><FarmerProfile /></ProtectedRoute>} />
       <Route path="/farmer/profile/:subview"  element={<ProtectedRoute allowedRole="farmer"><FarmerProfile /></ProtectedRoute>} />

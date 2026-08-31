@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from models import Diagnosis, get_db
 from schemas import DiagnosisOut, ExpertValidateRequest, ThresholdUpdateRequest
+from routes.alerts import create_alerts_for_diagnosis
 
 router = APIRouter(prefix="/api/expert", tags=["expert"])
 
@@ -58,6 +59,11 @@ def validate_diagnosis(payload: ExpertValidateRequest, db: Session = Depends(get
 
     db.commit()
     db.refresh(diagnosis)
+    
+    if payload.action == "approve" and diagnosis.disease_label != "Healthy" and diagnosis.severity not in ("Low", "None", "Unknown"):
+        # Default radius of 5.0km for peer alerts triggered by expert confirmation
+        create_alerts_for_diagnosis(diagnosis, radius_km=5.0, db=db)
+        
     return diagnosis
 
 

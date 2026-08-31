@@ -57,8 +57,8 @@ export default function DiagnoseScan() {
   const [loadingAdvisory, setLoadingAdvisory] = useState(false);
 
   const [speaking, setSpeaking] = useState(false);
-  const [alertSent, setAlertSent] = useState(false);
-  const [sendingAlert, setSendingAlert] = useState(false);
+  const [errorType, setErrorType] = useState(null); // 'not_plant' | 'general'
+  const cropScrollRef = useRef(null);
 
   // Sync lang state with global i18n language
   useEffect(() => {
@@ -84,7 +84,7 @@ export default function DiagnoseScan() {
     setResult(null);
     setAdvisory(null);
     setError(null);
-    setAlertSent(false);
+    setErrorType(null);
     const reader = new FileReader();
     reader.onload = (ev) => setPreview(ev.target.result);
     reader.readAsDataURL(file);
@@ -141,12 +141,23 @@ export default function DiagnoseScan() {
       fetchAdvisory(d.disease, d.crop_type, lang);
     } catch (err) {
       console.error('Diagnosis failed:', err);
+      const status = err.response?.status;
       const detail = err.response?.data?.detail;
-      setError(
-        typeof detail === 'string'
-          ? detail
-          : 'Could not analyze crop photo. Please ensure clear lighting and try again.'
-      );
+
+      if (status === 422) {
+        // Plant-guard rejection: clear the photo and show a dedicated UI
+        setErrorType('not_plant');
+        setPreview(null);
+        setSelectedFile(null);
+        setError(detail || 'This photo does not appear to show a plant or crop.');
+      } else {
+        setErrorType('general');
+        setError(
+          typeof detail === 'string'
+            ? detail
+            : 'Could not analyze crop photo. Please ensure clear lighting and try again.'
+        );
+      }
     } finally {
       setDiagnosing(false);
     }
@@ -189,21 +200,6 @@ export default function DiagnoseScan() {
     utteranceRef.current = null;
   };
 
-  const sendPeerAlert = async () => {
-    if (!result?.diagnosis_id) return;
-    setSendingAlert(true);
-    try {
-      const savedRad = localStorage.getItem('krishi_alert_radius');
-      const rad = savedRad ? parseFloat(savedRad) : 5.0;
-      await triggerAlert(result.diagnosis_id, rad);
-      setAlertSent(true);
-    } catch {
-      setAlertSent(true);
-    } finally {
-      setSendingAlert(false);
-    }
-  };
-
   const sev = result ? (SEVERITY_STYLE[result.severity] || SEVERITY_STYLE.Unknown) : null;
 
   return (
@@ -232,24 +228,53 @@ export default function DiagnoseScan() {
           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1.5">
             🌱 Target Crop (AI Context Filter)
           </label>
-          <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-            {CROP_OPTIONS.map((c) => {
-              const active = selectedCrop === c.id;
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setSelectedCrop(c.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
-                    active
-                      ? 'bg-green-700 text-white border-green-700 shadow-sm'
-                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  {c.label}
-                </button>
-              );
-            })}
+          <div className="relative flex items-center">
+            <button
+              type="button"
+              onClick={() => {
+                if (cropScrollRef.current) {
+                  cropScrollRef.current.scrollBy({ left: -150, behavior: 'smooth' });
+                }
+              }}
+              className="mr-1 flex-shrink-0 p-1 text-gray-400 hover:text-gray-900 transition-colors z-10"
+              aria-label="Scroll crops backward"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <div 
+              ref={cropScrollRef}
+              className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none scroll-smooth flex-1"
+            >
+              {CROP_OPTIONS.map((c) => {
+                const active = selectedCrop === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setSelectedCrop(c.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                      active
+                        ? 'bg-green-700 text-white border-green-700 shadow-sm'
+                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (cropScrollRef.current) {
+                  cropScrollRef.current.scrollBy({ left: 150, behavior: 'smooth' });
+                }
+              }}
+              className="ml-1 flex-shrink-0 p-1 text-gray-400 hover:text-gray-900 transition-colors z-10"
+              aria-label="Scroll crops forward"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
           </div>
         </div>
 
@@ -333,10 +358,24 @@ export default function DiagnoseScan() {
 
         {/* Error */}
         {error && (
-          <div className="rounded-2xl p-4 mb-4 flex items-start gap-3" style={{ background: '#fef2f2', border: '1.5px solid #fca5a5' }}>
-            <span className="text-xl">❌</span>
-            <p className="text-red-700 text-sm font-medium">{error}</p>
-          </div>
+          errorType === 'not_plant' ? (
+            <div
+              className="rounded-2xl p-5 mb-4 flex flex-col items-center gap-3 text-center page-enter"
+              style={{ background: '#fff7ed', border: '2px solid #fb923c' }}
+            >
+              <span className="text-4xl">🚫🌿</span>
+              <div>
+                <p className="text-orange-900 font-black text-base mb-1">Not a Crop Photo</p>
+                <p className="text-orange-800 text-sm leading-relaxed">{error}</p>
+              </div>
+              <p className="text-orange-600 text-xs font-semibold">📷 Please take a clear photo of a leaf, stem, or fruit</p>
+            </div>
+          ) : (
+            <div className="rounded-2xl p-4 mb-4 flex items-start gap-3" style={{ background: '#fef2f2', border: '1.5px solid #fca5a5' }}>
+              <span className="text-xl">❌</span>
+              <p className="text-red-700 text-sm font-medium">{error}</p>
+            </div>
+          )
         )}
 
         {/* Result Card */}
@@ -362,47 +401,47 @@ export default function DiagnoseScan() {
                 </div>
               )}
 
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-start justify-between mb-3 gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center flex-wrap gap-2 mb-1.5">
                     <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
                       {isUncertain
                         ? '⚠️ Preliminary AI Guess'
                         : (result.type === 'pest' ? '🐛 Detected Pest Infestation' : t('scan.detectedDisease'))}
                     </p>
                     {result.type === 'pest' && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 whitespace-nowrap">
                         PEST
                       </span>
                     )}
                     {isUncertain && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200 text-amber-900 border border-amber-400">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200 text-amber-900 border border-amber-400 whitespace-nowrap">
                         UNCONFIRMED
                       </span>
                     )}
                   </div>
 
                   {isUncertain ? (
-                    <h2 className="text-xl font-bold text-amber-950 italic">
-                      {result.name || result.disease} <span className="text-xs font-normal text-amber-700 not-italic">(Awaiting Expert)</span>
+                    <h2 className="text-xl font-bold text-amber-950 italic break-words">
+                      {result.name || result.disease} <span className="text-sm font-normal text-amber-700 not-italic block sm:inline mt-0.5 sm:mt-0">(Awaiting Expert)</span>
                     </h2>
                   ) : (
-                    <h2 className="text-2xl font-black" style={{ color: sev?.color }}>{result.name || result.disease}</h2>
+                    <h2 className="text-2xl font-black break-words" style={{ color: sev?.color }}>{result.name || result.disease}</h2>
                   )}
 
                   {result.crop_type && (
-                    <span className="pill text-xs mt-1" style={{ background: '#dcfce7', color: '#166534' }}>
+                    <span className="pill text-xs mt-2 inline-block" style={{ background: '#dcfce7', color: '#166534' }}>
                       🌾 {result.crop_type}
                     </span>
                   )}
                 </div>
 
                 {isUncertain ? (
-                  <span className="pill" style={{ background: '#fef3c7', color: '#92400e', border: '1.5px solid #fcd34d' }}>
-                    ⚠️ Awaiting Review
+                  <span className="pill flex-shrink-0 text-center text-xs whitespace-nowrap" style={{ background: '#fef3c7', color: '#92400e', border: '1.5px solid #fcd34d' }}>
+                    ⚠️ Awaiting<br className="sm:hidden" /> Review
                   </span>
                 ) : (
-                  <span className="pill" style={{ background: sev?.bg, color: sev?.color, border: `1.5px solid ${sev?.badge}` }}>
+                  <span className="pill flex-shrink-0 whitespace-nowrap" style={{ background: sev?.bg, color: sev?.color, border: `1.5px solid ${sev?.badge}` }}>
                     {sev?.emoji} {result.severity}
                   </span>
                 )}
@@ -487,29 +526,24 @@ export default function DiagnoseScan() {
           </div>
         )}
 
-        {/* Alert Nearby Farms */}
+        {/* Alert Nearby Farms - Automatic Feedback */}
         {result && result.severity !== 'Low' && result.disease !== 'Healthy' && (
           <div className="card mb-4 page-enter">
             <h3 className="font-black text-gray-900 mb-1">{t('scan.broadcastAlert')}</h3>
-            <p className="text-gray-500 text-sm mb-4">Warn farms within alert radius of this outbreak</p>
-            {alertSent ? (
-              <div className="rounded-xl p-3 flex items-center gap-3" style={{ background: '#f0fdf4', border: '1px solid #86efac' }}>
-                <span className="text-xl">✅</span>
-                <p className="text-green-800 font-semibold text-sm">{t('scan.alertSent')}</p>
+            {(result.is_uncertain || result.needs_expert_review) ? (
+              <div className="rounded-xl p-3 flex items-center gap-3 mt-3" style={{ background: '#fffbeb', border: '1px solid #fde68a' }}>
+                <span className="text-xl flex-shrink-0">⏳</span>
+                <p className="text-amber-900 font-semibold text-sm">
+                  Alerts will be dispatched to nearby farms automatically once our agricultural experts verify this diagnosis.
+                </p>
               </div>
             ) : (
-              <button
-                className="btn-outline w-full"
-                onClick={sendPeerAlert}
-                disabled={sendingAlert}
-              >
-                {sendingAlert ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="inline-block w-4 h-4 border-2 border-green-700 border-t-transparent rounded-full animate-spin" />
-                    {t('scan.broadcasting')}
-                  </span>
-                ) : `📢 ${t('scan.broadcastAlert')}`}
-              </button>
+              <div className="rounded-xl p-3 flex items-center gap-3 mt-3" style={{ background: '#f0fdf4', border: '1px solid #86efac' }}>
+                <span className="text-xl flex-shrink-0">✅</span>
+                <p className="text-green-800 font-semibold text-sm">
+                  {t('scan.alertSent') || 'Nearby farms within a 5km radius have been alerted about this confirmed outbreak.'}
+                </p>
+              </div>
             )}
           </div>
         )}

@@ -34,28 +34,19 @@ def haversine_km(lat1, lon1, lat2, lon2) -> float:
     return 2 * EARTH_RADIUS_KM * asin(sqrt(a))
 
 
-@router.post("/trigger", response_model=List[AlertOut])
-def trigger_alert(payload: AlertTriggerRequest, db: Session = Depends(get_db)):
-    diagnosis = db.query(Diagnosis).filter(Diagnosis.id == payload.diagnosis_id).first()
-    if not diagnosis:
-        raise HTTPException(status_code=404, detail="Diagnosis not found")
-
+def create_alerts_for_diagnosis(diagnosis: Diagnosis, radius_km: float, db: Session) -> list:
     if diagnosis.latitude is None or diagnosis.longitude is None:
-        raise HTTPException(
-            status_code=400,
-            detail="This diagnosis has no location, so nearby farms can't be found. "
-                   "Pass latitude/longitude when calling /api/diagnose.",
-        )
+        return []
 
     source_farm_id = diagnosis.farm_id
-
     all_farms = db.query(Farm).all()
     nearby = []
+    
     for farm in all_farms:
         if farm.id == source_farm_id:
             continue
         dist = haversine_km(diagnosis.latitude, diagnosis.longitude, farm.latitude, farm.longitude)
-        if dist <= payload.radius_km:
+        if dist <= radius_km:
             nearby.append((farm, dist))
 
     if not nearby:
@@ -72,7 +63,7 @@ def trigger_alert(payload: AlertTriggerRequest, db: Session = Depends(get_db)):
             source_farm_id=source_farm_id,
             target_farm_id=farm.id,
             message=message,
-            radius_km=payload.radius_km,
+            radius_km=radius_km,
         )
         db.add(alert)
         created_alerts.append(alert)
@@ -82,6 +73,21 @@ def trigger_alert(payload: AlertTriggerRequest, db: Session = Depends(get_db)):
         db.refresh(a)
 
     return created_alerts
+
+@router.post("/trigger", response_model=List[AlertOut])
+def trigger_alert(payload: AlertTriggerRequest, db: Session = Depends(get_db)):
+    diagnosis = db.query(Diagnosis).filter(Diagnosis.id == payload.diagnosis_id).first()
+    if not diagnosis:
+        raise HTTPException(status_code=404, detail="Diagnosis not found")
+        
+    if diagnosis.latitude is None or diagnosis.longitude is None:
+        raise HTTPException(
+            status_code=400,
+            detail="This diagnosis has no location, so nearby farms can't be found. "
+                   "Pass latitude/longitude when calling /api/diagnose.",
+        )
+
+    return create_alerts_for_diagnosis(diagnosis, payload.radius_km, db)
 
 
 @router.get("/nearby")

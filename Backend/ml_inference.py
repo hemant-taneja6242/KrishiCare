@@ -309,7 +309,16 @@ def _eval_disease(pil_img: Image.Image, crop_indices: list[int], canonical_crop:
     d_raw = _disease_id2label.get(d_top_idx, _disease_id2label.get(str(d_top_idx), f"class_{d_top_idx}"))
     parsed_crop, d_disease = _parse_disease_label(d_raw)
     d_crop = canonical_crop or parsed_crop
-    return d_disease, d_crop, round(d_confidence, 4), d_raw
+
+    # Normalized entropy: 0 = perfectly peaked (confident plant), 1 = uniform (non-plant)
+    # For 38 classes: max possible entropy = log(38). We normalise to [0, 1].
+    import math
+    n_classes = len(global_probs)
+    max_entropy = math.log(n_classes)
+    raw_entropy = -float(sum(p * math.log(p + 1e-12) for p in global_probs.tolist()))
+    norm_entropy = round(raw_entropy / max_entropy, 4)
+
+    return d_disease, d_crop, round(d_confidence, 4), d_raw, round(global_top_conf, 4), norm_entropy
 
 
 def _eval_pest(pil_img: Image.Image) -> tuple[Optional[str], float, float]:
@@ -400,10 +409,10 @@ def predict(image_bytes: bytes, mode: str = "auto", crop_hint: Optional[str] = N
         }
 
     # TIER 1: Evaluate Disease Model
-    d_disease, d_crop, d_confidence, d_raw = "Unknown", canonical_crop, 0.0, None
+    d_disease, d_crop, d_confidence, d_raw, d_raw_max, d_entropy = "Unknown", canonical_crop, 0.0, None, 0.0, 1.0
     if is_supported or not canonical_crop:
         try:
-            d_disease, d_crop, d_confidence, d_raw = _eval_disease(pil_img, crop_indices, canonical_crop)
+            d_disease, d_crop, d_confidence, d_raw, d_raw_max, d_entropy = _eval_disease(pil_img, crop_indices, canonical_crop)
             if d_crop:
                 final_crop = d_crop
         except Exception as ed:
@@ -421,6 +430,8 @@ def predict(image_bytes: bytes, mode: str = "auto", crop_hint: Optional[str] = N
             "is_uncertain": d_confidence < 0.60,
             "model_used": _active_disease_model_name,
             "raw_label": d_raw,
+            "raw_max_prob": d_raw_max,
+            "norm_entropy": d_entropy,
             "pest_candidate": None,
             "pest_model_triggered": False,
         }
@@ -445,6 +456,8 @@ def predict(image_bytes: bytes, mode: str = "auto", crop_hint: Optional[str] = N
             "is_uncertain": False,
             "model_used": _active_disease_model_name,
             "raw_label": d_raw,
+            "raw_max_prob": d_raw_max,
+            "norm_entropy": d_entropy,
             "pest_candidate": None,
             "pest_model_triggered": False,
         }
@@ -473,6 +486,8 @@ def predict(image_bytes: bytes, mode: str = "auto", crop_hint: Optional[str] = N
             "is_uncertain": p_conf < 0.60,
             "model_used": PRIMARY_PEST_MODEL,
             "raw_label": f"{p_label} ({round(p_raw, 3)})",
+            "raw_max_prob": d_raw_max,
+            "norm_entropy": d_entropy,
             "disease_candidate": f"{d_disease} ({round(d_confidence, 3)})" if d_disease != "Unknown" else None,
             "pest_model_triggered": True,
         }
@@ -487,6 +502,8 @@ def predict(image_bytes: bytes, mode: str = "auto", crop_hint: Optional[str] = N
             "is_uncertain": True,
             "model_used": _active_disease_model_name,
             "raw_label": f"uncatalogued_crop:{canonical_crop}",
+            "raw_max_prob": d_raw_max,
+            "norm_entropy": d_entropy,
             "pest_candidate": f"{p_label} ({round(p_raw, 3)})" if p_label else None,
             "pest_model_triggered": True,
         }
@@ -505,6 +522,8 @@ def predict(image_bytes: bytes, mode: str = "auto", crop_hint: Optional[str] = N
             "is_uncertain": True,
             "model_used": _active_disease_model_name,
             "raw_label": d_raw,
+            "raw_max_prob": d_raw_max,
+            "norm_entropy": d_entropy,
             "pest_candidate": f"{p_label} ({round(p_raw, 3)})" if p_label else None,
             "pest_model_triggered": True,
         }

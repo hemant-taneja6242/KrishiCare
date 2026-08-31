@@ -13,8 +13,8 @@ const SEVERITY_MAP = {
 
 const RADIUS_MAP = { Critical: 16, High: 12, Medium: 9, Low: 7 };
 
-const CROPS  = ['All Crops', 'Rice', 'Tomato', 'Wheat', 'Potato', 'Sugarcane'];
-const DISEASES = ['All Diseases', 'Rice Blast', 'Late Blight', 'Powdery Mildew', 'Bacterial Blight'];
+const CROPS    = ['All Crops', 'Tomato', 'Rice', 'Wheat', 'Potato', 'Sugarcane', 'Cotton', 'Grape', 'Onion', 'Corn', 'Mango', 'Cashew', 'Soybean'];
+const DISEASES = ['All Diseases', 'Early Blight', 'Late Blight', 'Rice Blast', 'Powdery Mildew', 'Bacterial Blight', 'Bacterial Leaf Blight', 'Rust', 'Red Rot', 'Downy Mildew', 'Sheath Blight', 'Purple Blotch', 'Bacterial Spot', 'Anthracnose', 'Northern Corn Leaf Blight', 'Leaf Spot', 'Septoria Leaf Spot'];
 
 export default function AdminMap() {
   const [hotspots, setHotspots] = useState([]);
